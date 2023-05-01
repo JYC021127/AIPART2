@@ -56,6 +56,7 @@ May also need a class representing the grid: with the number of red or blues? Th
 of turns from the empty board state?
 Not sure whether this is necessary
 '''
+class Board:
 
 
 
@@ -64,6 +65,7 @@ Not sure whether this is necessary
 
 '''Note the legal actions are:
     - Spawning while total power < 49
+    - Spreading actions that result from our current nodes  
     - Spreading as we know
 
 We choose a random action out of the legal actions when simulating i think

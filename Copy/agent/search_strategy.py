@@ -33,11 +33,11 @@ import random
 
 class NODE:
     # These are independent and not shared
-    def __init__(self, state, action = None, parent = None, children = None, wins = 0, playouts = 0):
-        self.state = state # Current configuration of the board (dictionary format) 
+    def __init__(self, board, action = None, parent = None, children = None, wins = 0, playouts = 0):
+        self.board = board # Current configuration of the board (dictionary format) 
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
-        self.children = children if children is not None else [] # List of children nodes, not sure whether this works yet. 
+        self.children = children if children is not None else [] # List of children nodes, defined as empty list if children is None, not sure whether this works yet. 
         # if children is None, assign an empty list to the field
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
@@ -53,10 +53,21 @@ class NODE:
 
 '''
 May also need a class representing the grid: with the number of red or blues? The total power of the current board? The total number 
-of turns from the empty board state?
+of turns from the empty board state? (teacher doesn't use extra memory to store num_red and num_blue,
+instead it searches the whole board and looks for red and blue each time it is needed), but i guess the teacher isn't running simulations, so it doesn't matter too much for them
 Not sure whether this is necessary
+seems similar to teachers file "referee/game/board.py" line 48 onwards (Don't really understand the format the teacher uses in def __init__ using ":" and "->")
+Python seems to allow nested classes, not 100 percent sure how to write that in at the moment 
 '''
-class Board:
+class BOARD:
+    
+    def __init__(self, state):
+        self.grid_state = grid_state
+        self.num_blue = num_blue
+        self.num_red = num_red
+        self.total_power = total power
+
+    def apply_action(self, action: Action)
 
 
 

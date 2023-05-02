@@ -94,23 +94,24 @@ class BOARD:
         legal_actions = []
 
         # While total power of board state < 49, all empty positions are valid spawn actions
-        for x in range(0, 7):
-            for y in range(0, 7):
-                coord = (x, y)
-                if (self.total_power < MAX_POWER):
+        if (self.total_power < MAX_POWER):
+            for x in range(0, 7):
+                for y in range(0, 7):
+                    coord = (x, y)
+
                     # spawn action
                     if coord not in self.grid_state:
                         legal_actions.append(SpawnAction(HexPos(coord[0], coord[1])))
                     
-                # spread action
-                else:
-                    if self.grid_state[coord][0] == player_colour:
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Up))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpRight))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownRight))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Down))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownLeft))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpLeft))
+                    # spread action
+                    else:
+                        if self.grid_state[coord][0] == player_colour:
+                            legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Up))
+                            legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpRight))
+                            legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownRight))
+                            legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Down))
+                            legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownLeft))
+                            legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpLeft))
                         
         
         # All well-defined SpreadActions are SpreadActions from each of the player_colour nodes in every direction (6 directions)

@@ -1,17 +1,14 @@
 # perform monte carlo tree search
 from math import *
-from search_strategy import *
 
 def mcts(node, max_simulations):
     while (max_simulations):
         # is a leaf node
-        # expansion
         if (node.children == []):
             expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
         
         # is root node, choose best child
         else:
-            # selection
             node = largest_ucb(node) # set current as the child with largest UCB
             simulation(node)
             backpropagate(node)

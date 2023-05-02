@@ -71,12 +71,12 @@ class BOARD:
         self.grid_state = grid_state
         self.num_blue = num_blue
         self.num_red = num_red
-        self.total_power = total_power
+        self.total_power = total power
         self.turns = turns
 
     # Function that takes some action as input (spread or spawn), and updates the board accordingly
     # Planning to read teachers code before writing this, not sure how to include Actions inside input
-    def apply_action(self, action: Action) # turn() function used in referee > game > __init__.py
+    def apply_action(self, action: Action)
 
         
     # Function that takes a grid_state (dictionary) as input and outputs True (game has ended) or False (game hasn't ended) 
@@ -95,23 +95,6 @@ class BOARD:
 
         # While total power of board state < 49, all empty positions are valid spawn actions
         if (self.total_power < MAX_POWER):
-            for x in range(0, 7):
-                for y in range(0, 7):
-                    coord = [x, y]
-
-                    # spawn action
-                    if coord not in self.grid_state:
-                        legal_actions.append(SpawnAction(HexPos(coord[0], coord[1])))
-                    
-                    # spread action
-                    else:
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Up))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpRight))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownRight))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Down))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownLeft))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpLeft))
-                        
         
         # All well-defined SpreadActions are SpreadActions from each of the player_colour nodes in every direction (6 directions)
         

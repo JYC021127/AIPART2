@@ -1,19 +1,22 @@
 # perform monte carlo tree search
-from math import *
-
 def mcts(node):
-    while (node != terminalnode): # maybe use evaluate_winner(node.grid_state) here?
+    while (node != terminal node) { # maybe use evaluate_winner(node.grid_state) here?
         # is a leaf node
-        if (node.children == []):
-            if (node.playouts == 0):
-                simulation(node)
-            else:
-                expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
+        if (node.children == []) {
+            if (node.playouts == 0) {
+                # simulation(node)
+            }
+            else {
+                # expand(node) <- find all possible moves & setting U(n) and N(n) = 0
                 node = node.child # selecting the first child node i think??
                 simulation(node)
                 backpropagate(node)
-        else:
+            }
+        }
+        else {
             node = largest_ucb(node) # set current as the child with largest UCB
+        }
+    }
 
 # calculate UCB1 score
 def UCB(node):

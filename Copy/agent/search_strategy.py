@@ -5,21 +5,26 @@
 To do: 
     1. Initialize root node (state of the game)
     2. Also need to decide on the node structure (classes)
-    2.1. UCB1 formula for a selection policy 
-    2.2. Required to write some sort of expansion algorithm 
-    3. Simulation (random?):
+        2.1. UCB1 formula for a selection policy 
+        2.2. Required to write some sort of expansion algorithm 
+    3. Simulation (random?, or choose based on heuristics):
         3.1. Need a function representing game termination (hopefully can copy teachers code from referee)
+        3.2. Also need delete relvant trees after simulation is completed 
     4. Choose the best action? 
     5. backpropogating algorithm (also need the result of the simulation) 
+        5.1. Function that works out the winner of the game 
     6. ALgorithm that finds all the legal moves (Probably have to randomly select one of the moves from this list)
     7. Also need to limit how many simulations are done each move i
  
     
+    Note that the root of the monte carlo tree is continuously changing, the root becomes some child of the monte carlo tree
+    after each move of the game. The initial "parent / root" and other "irrelevant children" can be "discarded" since the game 
+    has already advanced past that state (this is to save memory)
+
     Also: 
     - Suppose an action was done, we need to know what the board would look like after the action was applied (can possibly
     copy code from referee?)
 '''
-
 
 
 from referee.game import \
@@ -29,7 +34,8 @@ import math
 from copy import deepcopy
 import random 
 
-
+MAX_POWER = 49
+MAX_TURNS = 343
 
 class NODE:
     # These are independent and not shared
@@ -43,7 +49,7 @@ class NODE:
         self.playouts = playouts # Number of relating sumulations / playouts 
         
 
-    # Methods of the node: i.e. Appending children to node, 
+    # Methods of the node: i.e. Appending children to node, expand node (get on of its childrens, based on a particular legal move), backpropogating, 
     
     # Method that adds child node to self.children (list of children)
     def add_child(self, child):
@@ -66,31 +72,63 @@ class BOARD:
         self.num_blue = num_blue
         self.num_red = num_red
         self.total_power = total power
+        self.turns = turns
 
+    # Function that takes some action as input (spread or spawn), and updates the board accordingly
+    # Planning to read teachers code before writing this, not sure how to include Actions inside input
     def apply_action(self, action: Action)
 
+        
+    # Function that takes a grid_state (dictionary) as input and outputs True (game has ended) or False (game hasn't ended) 
+    def game_over(self):
+        return any([
+            self.turns >= MAX_TURNS,
+            self.num_red == 0,
+            self.num_blue == 0
+        ])
+
+
+    # Function that takes a board grid state (dictionary), and the colour of player as input and ouputs all possible legal actions the player can make
+    def get_legal_actions(self, player_colour): # Store whole action in the list i.e. SpawnAction(HexPos) and SpreadAction(Hexpos), need to look at teachers code to see how to put functions in input correctly
+
+        legal_actions = []
+
+        # While total power of board state < 49, all empty positions are valid spawn actions
+        if (self.total_power < MAX_POWER):
+        
+        # All well-defined SpreadActions are SpreadActions from each of the player_colour nodes in every direction (6 directions)
+        
+
+        return legal_actions
 
 
 
-# Function that takes a board grid state (dictionary), and the colour of player as input and ouputs all possible legal actions the player can make
-
-'''Note the legal actions are:
-    - Spawning while total power < 49
-    - Spreading actions that result from our current nodes  
-    - Spreading as we know
-
-We choose a random action out of the legal actions when simulating i think
-'''
-
-def get_legal_actions(grid_state, player_colour):
 
 
 
+    # Function, unplanned yet, to work out who is the winner
+    '''
+def evaluate_winner(grid_state)
+    if (grid_state.turns >= 343):
+        return max_turn_game_result(grid_state, player_colour) # Return whether win, lose or draw
+
+    if (grid_state.num_red == 0 or grid_state.num_blue == 0):
+        if (grid_state.num_red== 0 and grid_state.num_blue ==0):
+            return DRAW
+        elif (grid_state.num_red == 0):
+            if (player_colour == RED):
+                return LOSS
+            else:
+                return WIN
+        else:
+            if (player_colour == BLUE):
+                return LOSS
+            else:
+                return WIN
+    return STILL_GOING
+    '''
 
 
-
-
-# Function that takes a board grid state as input, and checks whether the game has ended?
 
 '''
 Game has ended when:
@@ -103,7 +141,13 @@ Game has ended when:
 
 Teachers code for this part is in referee/game/board.py "game_over" function (around line 169 - 187) 
 '''
-def endgame(grid_state):
 
 
 
+    '''Note the legal actions are:
+        - Spawning while total power < 49
+        - Spreading actions that result from our current nodes  
+        - Spreading as we know
+
+    We choose a random action out of the legal actions when simulating i think
+    '''

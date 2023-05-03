@@ -70,7 +70,7 @@ class BOARD:
     # Planning to read teachers code before writing this, not sure how to include Actions inside input
     # Wonder whether this can be imported from the teachers code, but it seems quite hard. Don't really know what
     # the teacher is writing. Perhaps just copy the idea of the teachers code
-    def apply_action(self, action: Action): # turn() function used in referee > game > __init__.py
+    def apply_action(self, action: Action) # turn() function used in referee > game > __init__.py
         match action: 
             case SpawnAction():
                 res_action = self._resolve_spawn_action(action)

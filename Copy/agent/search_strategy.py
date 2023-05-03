@@ -79,6 +79,29 @@ class BOARD:
             self.num_blue == 0
         ])
 
+    # Function that takes in a grid_state (dictionary) as input and outputs the colour of the winner ("R" or "B") 
+    # Make sure that this function is only run after game_end condition is satisfied. There are only 4 conditions of end_game that determine winner
+    '''
+    if board.turns larger than max moves -> count total power of red and blue and output colour with most total colour
+    otherwise if either red == 0 or blue == 0, 
+    
+    Make sure that this function is only run after the game over function returns TRUE 
+    '''
+    def winner(self):
+        # If board reached max number of turns (343 turns), the winner is the colour with the most power 
+        if self.turns >= MAX_TURNS:
+            return max_power_colour()
+        # Otherwise, empty board represents draw and the colour without nodes on the board is the LOSING colour 
+        else:
+            if (self.num_red == 0 and self.num_blue == 0):
+                return None # need a colour here that represents draw, perhaps use "W" as a global constant ("WHITE"), neither blue or red has won
+            elif self.num_red == 0:
+                return 'B'
+            else: # self.num_blue == 0
+                if self.num_blue != 0:
+                    raise ValueError("Something is wrong, perhaps the ending condition is not satisfied")
+                return 'R'
+
 
     # Function that takes a board grid state (dictionary), and the colour of player as input and ouputs all possible legal actions the player can make
     def get_legal_actions(self, player_colour): # Store whole action in the list i.e. SpawnAction(HexPos) and SpreadAction(Hexpos), need to look at teachers code to see how to put functions in input correctly
@@ -89,7 +112,7 @@ class BOARD:
         for x in range(0, 7):
             for y in range(0, 7):
                 coord = (x, y)
-                if (self.total_power < MAX_POWER):
+                if (self.total_power < MAX_POWER): # flag? 
                     # spawn action
                     if coord not in self.grid_state:
                         legal_actions.append(SpawnAction(HexPos(coord[0], coord[1])))
@@ -106,8 +129,6 @@ class BOARD:
                         
         
         # All well-defined SpreadActions are SpreadActions from each of the player_colour nodes in every direction (6 directions)
-        
-
         return legal_actions
 
 

@@ -39,12 +39,11 @@ MAX_TURNS = 343
 
 class NODE:
     # These are independent and not shared
-    def __init__(self, board, action = None, parent = None, children = None, total = 0, wins = 0, playouts = 0):
+    def __init__(self, board, action = None, parent = None, children = None, wins = 0, playouts = 0):
         self.board = board # Current configuration of the board (dictionary format) 
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
         self.children = children if children is not None else [] # List of children nodes, defined as empty list if children is None, not sure whether this works yet. 
-        self.total = total
        #self.actions_left = actions_left if actions_left it not None else [] 
         # if children is None, assign an empty list to the field
         self.wins = wins # Number of wins
@@ -67,7 +66,7 @@ class NODE:
         for x in range(0, 7):
             for y in range(0, 7):
                 coord = (x, y)
-                if board.total_power < MAX_POWER: # flag? 
+                if (board.total_power < MAX_POWER): # flag? 
                     # spawn action
                     if coord not in board.grid_state:
                         legal_actions.append(SpawnAction(HexPos(coord[0], coord[1])))
@@ -81,16 +80,13 @@ class NODE:
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Down))
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownLeft))
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpLeft))
-
-        ## use this
-        self.total = len(legal_actions)
-        # need to write a function to choose which child nodes to store
-            # pop and append child nodes in self.children
-        legal_actions.clear()
+                        
+        
+        while legal_actions:
+            action = legal_actions.pop()
+            new_node = apply_action() # need to write function for this: play the action, set wins and playouts = 0
+            self.children.append(new_node)
     
-    # check if this node has been fully expanded
-    def fully_explored(self):
-        return self.playouts >= self.total
 
 # Class representing information relating to the grid
 class BOARD:
@@ -212,20 +208,18 @@ def evaluate_winner(grid_state)
                 return WIN
     return STILL_GOING
     '''
-
-
 # perform monte carlo tree search
 def mcts(node, max_iterations):
     count = 0
     while count < max_iterations:
         # root node, selection
-        while not node.board.game_over() or not node.fully_explored():
-            node.playouts += 1
+        while node.children and not node.board.game_over():
             node = largest_ucb(node)
 
         # is a leaf node (expansion)
-        if not node.board.game_over():
+        if not node.board.game_over() or not node.board.terminal():
             expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
+            node = largest_ucb(node)
 
         # simulation 
         value = simulate(node)
@@ -236,13 +230,11 @@ def mcts(node, max_iterations):
         count += 1
     return best_action # need to write function for this 
 
-
 # calculate UCB1 score
 def UCB(node):
     c = 2   # just testing out
     value = node.wins/node.playouts
     return value + c * sqrt(log(node.parent.playouts)/node.playouts)
-
 
 # returns the child of the node with the largest ucb score
 def largest_ucb(node):
@@ -254,27 +246,23 @@ def largest_ucb(node):
             largest = UCB(child)
             largest_child = child
             flag = 1
-        # select child with larger score
         else:
             if UCB(child) == 0 or UCB(child) > largest:
                 largest = UCB(child)
                 largest_child = child
     return largest_child
 
-
-# expansion, store partial actions as child nodes
+# expansion, store all actions as child nodes
 def expand(node):
     node.get_legal_actions()
 
-# simulation, play randomly
-def simulate(node, MAX_DEPTH):
-    depth = 0
-    while not node.board.game_over() or depth < MAX_DEPTH:
-        # might wanna fix this line, get_legal_actions no longer return a list of actions
-        # need random policy function for what random actions we want?
+def simulate(node):
+    while not node.board.game_over() or not node.board.terminal():
         actions = node.get_legal_actions()
-        ####
         random_index = random.randint(0, len(actions)-1)
         random_action = actions[random_index]
         play(random_action) # need to write this: play the action and change the node to the result of action
-        depth += 1
+
+def backpropagate(node):
+
+

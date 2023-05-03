@@ -73,14 +73,51 @@ class BOARD:
     def apply_action(self, action: Action): # turn() function used in referee > game > __init__.py
         match action: 
             case SpawnAction():
-                res_action = self._resolve_spawn_action(action)
+                self.resolve_spawn_action(action)
             case SpreadAction():
-                res_action = self._resolve_spread_action(action)
+                self.resolve_spread_action(action)
             case _:
                 raise ValueError("This isn't supposed to happen. The only 2 actions should be Spread and Spawn ") # Not sure whether Raise ValueError works
 
 
+
+
+    # Need to somehow know that player colour, the action doesn't provide any information about the colour to apply
+    # But we can use that red is always turn 0, blue is always turn 1 -> red is always even, and blue is always odd turn -> turns % 2 == 0 or not to determine colour
+
+    # Function that takes an SpawnAction as input and updates the board accordingly
+    def resolve_spawn_action(self, action: SpawnAction):
+        # self.validate?
         
+        cell = action.cell   
+        
+        if (self.total_power >= MAX_POWER):
+            raise ValueError("Not supposed to happen? L95. Max power already reached") 
+        
+        colour = self.player_turn()
+        
+        # Now we update the grid accordinly
+
+
+
+    # Function that takes a SpreadAction as input and updates the board accordingly
+    def resolve_spread_action(self, action: SpreadAction):
+        # self.validate 
+
+        colour = self.player_turn()
+        from_cell, dir = action.cell, action.direction
+         
+
+# Function that evalutes the board turns and returns the player colour that is to play in the current turn (Red: even, Blue: odd )
+    def player_turn(self) -> str:
+        # Red's turn when total turns is even
+        if self.turns % 2 == 0:
+            return 'R'
+        else: #'B' plays on odd turn
+            return 'B'
+   
+
+
     # Function that takes a grid_state (dictionary) as input and outputs True (game has ended) or False (game hasn't ended) 
     '''
     O(1), just accessing stuff

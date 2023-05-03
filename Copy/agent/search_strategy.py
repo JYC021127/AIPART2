@@ -68,10 +68,23 @@ class BOARD:
 
     # Function that takes some action as input (spread or spawn), and updates the board accordingly
     # Planning to read teachers code before writing this, not sure how to include Actions inside input
+    # Wonder whether this can be imported from the teachers code, but it seems quite hard. Don't really know what
+    # the teacher is writing. Perhaps just copy the idea of the teachers code
     def apply_action(self, action: Action) # turn() function used in referee > game > __init__.py
+        match action: 
+            case SpawnAction():
+                res_action = self._resolve_spawn_action(action)
+            case SpreadAction():
+                res_action = self._resolve_spread_action(action)
+            case _:
+                raise ValueError("This isn't supposed to happen. The only 2 actions should be Spread and Spawn ") # Not sure whether Raise ValueError works
+
 
         
     # Function that takes a grid_state (dictionary) as input and outputs True (game has ended) or False (game hasn't ended) 
+    '''
+    O(1), just accessing stuff
+    '''
     def game_over(self):
         return any([
             self.turns >= MAX_TURNS,
@@ -82,10 +95,7 @@ class BOARD:
     # Function that takes in a grid_state (dictionary) as input and outputs the colour of the winner ("R" or "B") 
     # Make sure that this function is only run after game_end condition is satisfied. There are only 4 conditions of end_game that determine winner
     '''
-    if board.turns larger than max moves -> count total power of red and blue and output colour with most total colour
-    otherwise if either red == 0 or blue == 0, 
-    
-    Make sure that this function is only run after the game over function returns TRUE 
+    O(1), just accessing stuff and comparing them
     '''
     def winner(self):
         # If board reached max number of turns (343 turns), the winner is the colour with the most power 

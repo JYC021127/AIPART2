@@ -1,3 +1,4 @@
+# perform monte carlo tree search
 from math import *
 from search_strategy import *
 
@@ -28,7 +29,6 @@ def UCB(node):
     value = node.wins/node.playouts
     return value + c * sqrt(log(node.parent.playouts)/node.playouts)
 
-# returns the child of the node with the largest ucb score
 def largest_ucb(node):
     flag = 0 # used for the first child
     largest = 0

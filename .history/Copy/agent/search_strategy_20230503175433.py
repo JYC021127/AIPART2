@@ -264,5 +264,4 @@ def simulate(node):
         play(random_action) # need to write this: play the action and change the node to the result of action
 
 def backpropagate(node):
-    
 

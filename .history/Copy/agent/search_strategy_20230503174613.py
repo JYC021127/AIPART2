@@ -32,7 +32,7 @@ from referee.game import \
 
 from math import *
 from copy import deepcopy
-import random
+import random 
 
 MAX_POWER = 49
 MAX_TURNS = 343
@@ -257,12 +257,4 @@ def expand(node):
         node.playouts = 0
 
 def simulate(node):
-    while not node.board.game_over() or not node.board.terminal():
-        actions = node.board.get_legal_actions(node.board)
-        random_index = random.randint(0, len(actions)-1)
-        random_action = actions[random_index]
-        play(random_action) # need to write this: play the action and change the node to the result of action
-
-def backpropagate(node):
-    
 

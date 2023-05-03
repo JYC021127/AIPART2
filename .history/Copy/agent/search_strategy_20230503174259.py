@@ -32,7 +32,7 @@ from referee.game import \
 
 from math import *
 from copy import deepcopy
-import random
+import random 
 
 MAX_POWER = 49
 MAX_TURNS = 343
@@ -218,10 +218,11 @@ def mcts(node, max_iterations):
             node = largest_ucb(node)
 
         # simulation 
-        value = simulate(node)
+        value = simulation(node)
 
-        # backpropagation
-        backpropagate(value)
+        # backpropagate
+        while node:
+            backpropagate(value)
 
         count += 1
     return best_action # need to write function for this 
@@ -255,14 +256,4 @@ def expand(node):
         node.children.append(action)
         node.wins = 0
         node.playouts = 0
-
-def simulate(node):
-    while not node.board.game_over() or not node.board.terminal():
-        actions = node.board.get_legal_actions(node.board)
-        random_index = random.randint(0, len(actions)-1)
-        random_action = actions[random_index]
-        play(random_action) # need to write this: play the action and change the node to the result of action
-
-def backpropagate(node):
-    
 

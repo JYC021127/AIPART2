@@ -56,15 +56,7 @@ class NODE:
         self.children.append(child)
     
 
-
-'''
-May also need a class representing the grid: with the number of red or blues? The total power of the current board? The total number 
-of turns from the empty board state? (teacher doesn't use extra memory to store num_red and num_blue,
-instead it searches the whole board and looks for red and blue each time it is needed), but i guess the teacher isn't running simulations, so it doesn't matter too much for them
-Not sure whether this is necessary
-seems similar to teachers file "referee/game/board.py" line 48 onwards (Don't really understand the format the teacher uses in def __init__ using ":" and "->")
-Python seems to allow nested classes, not 100 percent sure how to write that in at the moment 
-'''
+# Class representing information relating to the grid
 class BOARD:
     
     def __init__(self, state):
@@ -146,25 +138,3 @@ def evaluate_winner(grid_state)
     '''
 
 
-
-'''
-Game has ended when:
-    - When there exist only one colour on the board
-    - When red = 0 or blue = 0:
-        - draw if red and blue both equal 0
-        - red wins if blue = 0
-        - blue wins if red = 0
-    - When there has been a total of 343 turns without the winner declared
-
-Teachers code for this part is in referee/game/board.py "game_over" function (around line 169 - 187) 
-'''
-
-
-
-    '''Note the legal actions are:
-        - Spawning while total power < 49
-        - Spreading actions that result from our current nodes  
-        - Spreading as we know
-
-    We choose a random action out of the legal actions when simulating i think
-    '''

@@ -44,6 +44,7 @@ class NODE:
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
         self.children = children if children is not None else [] # List of children nodes, defined as empty list if children is None, not sure whether this works yet. 
+       #self.actions_left = actions_left if actions_left it not None else [] 
         # if children is None, assign an empty list to the field
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
@@ -87,7 +88,7 @@ class BOARD:
 
     # Function that takes an SpawnAction as input and updates the board accordingly
     def resolve_spawn_action(self, action: SpawnAction):
-        # self.validate?
+        # self.validate?. need to make sure argument types are correct, and board position is not currently occupied?
         
         cell = action.cell   
         
@@ -95,8 +96,8 @@ class BOARD:
             raise ValueError("Not supposed to happen? L95. Max power already reached") 
         
         colour = self.player_turn()
+         
         
-        # Now we update the grid accordinly
 
 
 
@@ -107,8 +108,9 @@ class BOARD:
         colour = self.player_turn()
         from_cell, dir = action.cell, action.direction
          
-
-# Function that evalutes the board turns and returns the player colour that is to play in the current turn (Red: even, Blue: odd )
+    
+    # can probably use @property for these types of functions    
+    # Function that evalutes the board turns and returns the player colour that is to play in the current turn (Red: even, Blue: odd )
     def player_turn(self) -> str:
         # Red's turn when total turns is even
         if self.turns % 2 == 0:

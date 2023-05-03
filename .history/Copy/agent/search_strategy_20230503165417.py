@@ -207,13 +207,15 @@ def evaluate_winner(grid_state)
 # perform monte carlo tree search
 def mcts(node, max_iterations):
     while (max_iterations):
-        # is a leaf node (expansion)
-        if node.children == [] and node.board.game_over():
-            expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
+        # set up tree
+        while not node.board.game_over():
+            # is a leaf node (expansion)
+            if node.children == []:
+                expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
+                break
         
-        # is root node, choose best child (selection)
-        else:
-            while node.board.game_over():
+            # is root node, choose best child (selection)
+            else:
                 node = largest_ucb(node) # set current as the child with largest UCB
 
         # simulation 

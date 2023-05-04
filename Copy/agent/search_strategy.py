@@ -77,7 +77,36 @@ class NODE:
         return child
 
 
-   
+    # Function that simulates / rollout of the node and returns the colour of the winner
+    def simulate(self):
+
+        # Create a deep copy of the node we can modify, otherwise we end up deleting the node in our tree
+        node = deepcopy(self)
+
+        while not node.board.game_over: 
+            tmp = node
+            node = expand(node) # Generates a new child node randomly (with a random action)
+            del tmp # Not actually sure if this works, but we are short on memory
+
+        winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
+        del node
+
+        return winner
+
+    # Function that backpropogates the result (either 'R' or 'B' has won), updating the wins and the playouts
+    def backpropogate(self, result):
+        # Set node to itself
+        node = self
+
+        # While node is not None, playouts += 1 , if player turns == winning colour, wins += 1 
+        while node is not None:
+            node.playouts += 1
+            # If result / winner colour == player_turn colour, += 1 
+            if result == node.board.player_turn:
+                node.wins += 1
+            node = node.parent  
+
+     
     # Function that checks whether a node is fully explored based on playouts and total children(True if fully explored, False if not fully explored) 
     def fully_explored(self):
         return self.playouts >= self.total
@@ -281,7 +310,7 @@ class BOARD:
         return (a[0] % 7, a[1] % 7)
 
     
-    @property 
+    @property  #@property means that you don't need () at the end of the method if you're not taking any parameters I think
     # Function that evalutes the board turns and returns the player colour that is to play in the current turn (Red: even, Blue: odd)
     '''
     O(1), just accessing stuff
@@ -289,9 +318,9 @@ class BOARD:
     def player_turn(self) -> str:
         # Red's turn when total turns is even
         if self.turns % 2 == 0:
-            return 'r'
+            return 'R'
         else: #'B' plays on odd turn
-            return 'b'
+            return 'B'
    
 
 
@@ -337,7 +366,6 @@ def mcts(node, max_iterations):
     count = 0
     while count < max_iterations:
 
-
         # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
         while not node.board.game_over and node.fully_explored():
             node.playouts += 1 # Don't think this is needed, this shouldn't be here
@@ -361,15 +389,8 @@ def mcts(node, max_iterations):
     return best_action() # need to write function for this:  
 
 
-# expansion, store partial actions as child nodes
-def expand(self):
-    # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
-    random_action = random.choice(self.legal_actions)
-    next_grid = deepcopy(self.board.grid_state)
-    next_grid.apply_action
-    
 
-
+'''
 # simulation, play randomly
 def simulate(node):
     depth = 0
@@ -382,3 +403,5 @@ def simulate(node):
         random_action = actions[random_index]
         play(random_action) # need to write this: play the action and change the node to the result of action
         depth += 1
+
+'''

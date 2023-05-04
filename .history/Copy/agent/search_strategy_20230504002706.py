@@ -36,7 +36,6 @@ import random
 
 MAX_POWER = 49
 MAX_TURNS = 343
-MAX_DEPTH = 10  # CHANGE THIS LATER
 
 class NODE:
     # These are independent and not shared
@@ -93,31 +92,6 @@ class NODE:
     def fully_explored(self):
         return self.playouts >= self.total
 
-    # calculate UCB1 score
-    def UCB(self):
-        c = 2   # just testing out
-        value = self.wins/self.playouts
-        return value + c * sqrt(log(self.parent.playouts)/self.playouts)
-
-
-    # returns the child of the node with the largest ucb score
-    def largest_ucb(self):
-        flag = 0 # used for the first child
-        largest = 0
-        largest_child = None
-        for child in self.children:
-            if flag == 0:
-                largest = child.UCB()
-                largest_child = child
-                flag = 1
-            # select child with larger score
-            else:
-                if child.UCB() == 0 or child.UCB() > largest:
-                    largest = child.UCB()
-                    largest_child = child
-        return largest_child
-
-            
 # Class representing information relating to the grid
 class BOARD:
     
@@ -245,22 +219,47 @@ def mcts(node, max_iterations):
     count = 0
     while count < max_iterations:
         # root node, selection
-        while not node.board.game_over() and node.fully_explored():
+        while not node.board.game_over() or not node.fully_explored():
             node.playouts += 1
-            node = node.largest_ucb()
+            node = largest_ucb(node)
 
         # is a leaf node (expansion)
-        if not node.board.game_over() and not node.fully_explored():
-            node = expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
+        if not node.board.game_over():
+            expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
 
-        # simulation (only simulating leaf nodes with unexplored children)
-        if node.children is None:
-            value = simulate(node)
-            # backpropagation
-            backpropagate(value)
+        # simulation 
+        value = simulate(node)
+
+        # backpropagation
+        backpropagate(value)
 
         count += 1
-    return best_action() # need to write function for this 
+    return best_action # need to write function for this 
+
+
+# calculate UCB1 score
+def UCB(node):
+    c = 2   # just testing out
+    value = node.wins/node.playouts
+    return value + c * sqrt(log(node.parent.playouts)/node.playouts)
+
+
+# returns the child of the node with the largest ucb score
+def largest_ucb(node):
+    flag = 0 # used for the first child
+    largest = 0
+    largest_child = None
+    for child in node.children:
+        if flag == 0:
+            largest = UCB(child)
+            largest_child = child
+            flag = 1
+        # select child with larger score
+        else:
+            if UCB(child) == 0 or UCB(child) > largest:
+                largest = UCB(child)
+                largest_child = child
+    return largest_child
 
 
 # expansion, store partial actions as child nodes
@@ -269,9 +268,9 @@ def expand(node):
 
 
 # simulation, play randomly
-def simulate(node):
+def simulate(node, MAX_DEPTH):
     depth = 0
-    while not node.board.game_over() and depth < MAX_DEPTH:
+    while not node.board.game_over() or depth < MAX_DEPTH:
         # might wanna fix this line, get_legal_actions no longer return a list of actions
         # need random policy function for what random actions we want?
         actions = node.get_legal_actions()

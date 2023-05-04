@@ -36,12 +36,13 @@ from math import *
 from copy import deepcopy
 import random
 
-MAX_POWER = 49
-MAX_TURNS = 343
-MAX_DEPTH = 10  # CHANGE THIS LATER
+MAX_POWER = 49  # Max total power of a game
+MAX_TURNS = 343 # Max total turns in a game
+MAX_DEPTH = 10  # This shouldn't be here I think, the idea of the simulation is that you play the game until someone wins, Its not very costly, cuz the branching facor is always 1
+SIMULATIONS = 500
 
+# Class representing Nodes of the Monte Carlo Tree
 class NODE:
-    # These are independent and not shared
     def __init__(self, board, action = None, parent = None, children = None, total = 0, wins = 0, playouts = 0):
         self.board = board # Current grid_state, may need to change the data structure to cater for HexPos since we are using teachers actions code 
         self.action = action # Action parent node took to get to current state 
@@ -50,16 +51,21 @@ class NODE:
         self.total = total # Initial total moves of the game state? 
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
-        
+         
 
-    # Methods of the node: i.e. Appending children to node, expand node (get on of its childrens, based on a particular legal move), backpropogating, 
-    
-    # Method that adds child node to self.children (list of children) 
+
+    # Method that adds child node to self.children (list of children)
+    '''
+    O(1) generally, just adding an element into a list
+    '''
     def add_child(self, child):
         self.children.append(child)
-    
-    # Function that takes a board grid state (dictionary), and the colour of player as input and ouputs all possible legal actions the player can make
-    def get_legal_actions(self): # Store whole action in the list i.e. SpawnAction(HexPos) and SpreadAction(Hexpos), need to look at teachers code to see how to put functions in input correctly
+   
+    # Function that calculates all the legal moves a player can do (can be found by even vs odd of self.board.turns since red starts game first)
+    '''
+    O(n^2) generally, worse case O(n) , 49 iterations , accessing dictionary is constant on average, appending to list is O(1) on average, 
+    '''
+    def get_legal_actions(self): 
 
         legal_actions = []
         board = self.board
@@ -88,14 +94,37 @@ class NODE:
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownLeft))
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpLeft))
 
-        ## use this
+
+        
+        ## use this, do you mean like legal_actions[random(len(legalactions))]
         self.total = len(legal_actions)
         # need to write a function to choose which child nodes to store
             # pop and append child nodes in self.children
         legal_actions.clear()
-    
+
+        return legal_actions
+
+
+    # Function that generates a new child node of the selected node (the selection policy was random)
+    def expand(self):
+        # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
+        random_action = random.choice(self.legal_actions)
+
+        # Create / Deepcopy original grid and apply the random action
+        next_grid = deepcopy(self.board.grid_state)
+        next_grid.apply_action(random_action)
+
+        # Initialize new child and add into into children list of self / parent
+        child = NODE(board = next_grid, action = random_action, parent = self, children = None)
+        self.children.append(child)
+        return child
+
+
+   
+    # Function that checks whether a node is fully explored based on playouts and total children(True if fully explored, False if not fully explored) 
     def fully_explored(self):
         return self.playouts >= self.total
+
 
     # calculate UCB1 score
     def UCB(self):
@@ -103,7 +132,7 @@ class NODE:
         value = self.wins/self.playouts
         return value + c * sqrt(log(self.parent.playouts)/self.playouts)
 
-
+        
     # returns the child of the node with the largest ucb score
     def largest_ucb(self):
         flag = 0 # used for the first child
@@ -236,19 +265,19 @@ class BOARD:
     
 
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
-    def eval_colour(coordinate):
+    def eval_colour(self, coordinate):
         return self.board[coordinate][0]
 
     # Function that does vector addition for 2 coordinates
-    def add_tuple(a, b):
+    def add_tuple(self, a, b):
         return (a[0] + b[0], a[1] + b[1])
 
     # Function that does scalar multiplication on the tuple a
-    def mult_tuple(a, scalar):
+    def mult_tuple(self, a, scalar):
         return (scalar * a[0], scalar * a[1])
     
     # Function that "fixes" the tuple so that the tuple remains in the torus structure
-    def fix_tuple(a):
+    def fix_tuple(self, a):
         return (a[0] % 7, a[1] % 7)
 
     
@@ -298,32 +327,47 @@ class BOARD:
                 return 'R'
 
 
-# perform monte carlo tree search
+
+
+
+
+
+# perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backproporgate
 def mcts(node, max_iterations):
     count = 0
     while count < max_iterations:
-        # root node, selection
-        while not node.board.game_over() and node.fully_explored():
-            node.playouts += 1
+
+
+        # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
+        while not node.board.game_over and node.fully_explored():
+            node.playouts += 1 # Don't think this is needed, this shouldn't be here
             node = node.largest_ucb()
 
         # is a leaf node (expansion)
-        if not node.board.game_over() and not node.fully_explored():
+        if not node.board.game_over and not node.fully_explored():
             node = expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
 
-        # simulation (only simulating leaf nodes with unexplored children)
+        # Simulation (only simulate nodes, where there still exist unexplored children)
+        simulate(node)
+        backpropogate(value)
+
+
         if node.children is None:
             value = simulate(node)
             # backpropagation
             backpropagate(value)
 
         count += 1
-    return best_action() # need to write function for this 
+    return best_action() # need to write function for this:  
 
 
 # expansion, store partial actions as child nodes
-def expand(node):
-    node.get_legal_actions()
+def expand(self):
+    # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
+    random_action = random.choice(self.legal_actions)
+    next_grid = deepcopy(self.board.grid_state)
+    next_grid.apply_action
+    
 
 
 # simulation, play randomly

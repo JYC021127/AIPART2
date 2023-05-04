@@ -61,49 +61,6 @@ class NODE:
     def add_child(self, child):
         self.children.append(child)
    
-    # Function that calculates all the legal moves a player can do (can be found by even vs odd of self.board.turns since red starts game first)
-    '''
-    O(n^2) generally, worse case O(n) , 49 iterations , accessing dictionary is constant on average, appending to list is O(1) on average, 
-    '''
-    def get_legal_actions(self): 
-
-        legal_actions = []
-        board = self.board
-        flag = 0
-       
-        # Using flag to flag whether board is eligible for spawning
-        if board.total_power < MAX_POWER:
-            flag = 1
-        
-        # While total power of board state < 49, all empty positions are valid spawn actions, but we can also spread
-        for x in range(0, 7):
-            for y in range(0, 7):
-                coord = (x, y)
-                if flag: # flag? 
-                    # spawn action
-                    if coord not in board.grid_state:
-                        legal_actions.append(SpawnAction(HexPos(coord[0], coord[1])))
-                    
-                # spread action, this can happen independent to the total power of the board state 
-                if coord in board.grid_state: # Check whether value inside, otherwise it raises key error i think
-                    if board.grid_state[coord][0] == board.player_turn:
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Up))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpRight))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownRight))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Down))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownLeft))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpLeft))
-
-
-        
-        ## use this, do you mean like legal_actions[random(len(legalactions))]
-        self.total = len(legal_actions)
-        # need to write a function to choose which child nodes to store
-            # pop and append child nodes in self.children
-        legal_actions.clear()
-
-        return legal_actions
-
 
     # Function that generates a new child node of the selected node (the selection policy was random)
     def expand(self):
@@ -114,8 +71,8 @@ class NODE:
         next_grid = deepcopy(self.board.grid_state)
         next_grid.apply_action(random_action)
 
-        # Initialize new child and add into into children list of self / parent
-        child = NODE(board = next_grid, action = random_action, parent = self, children = None)
+        # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
+        child = NODE(board = next_grid, action = random_action, parent = self, children = None, total = len(next_grid.legal_actions()))
         self.children.append(child)
         return child
 
@@ -160,6 +117,49 @@ class BOARD:
         self.num_red = num_red
         self.total_power = total_power
         self.turns = turns
+    
+
+    # Function that calculates all the legal moves a player can do (can be found by even vs odd of self.board.turns since red starts game first)
+    '''
+    O(n^2) generally, where n = 7 representing 7 by 7 grid, accessing dictionary is constant on average, appending to list is O(1) on average, with worst case O(n) 
+    '''
+    def get_legal_actions(self): 
+
+        legal_actions = []
+        flag = 0
+       
+        # Using flag to flag whether board is eligible for spawning
+        if self.total_power < MAX_POWER:
+            flag = 1
+        
+        # While total power of board state < 49, all empty positions are valid spawn actions, but we can also spread
+        for x in range(0, 7):
+            for y in range(0, 7):
+                coord = (x, y)
+                if flag: # flag? 
+                    # spawn action
+                    if coord not in self.grid_state:
+                        legal_actions.append(SpawnAction(HexPos(coord[0], coord[1])))
+                    
+                # spread action, this can happen independent to the total power of the board state 
+                if coord in self.grid_state: # Check whether value inside, otherwise it raises key error i think
+                    if self.grid_state[coord][0] == self.player_turn:
+                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Up))
+                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpRight))
+                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownRight))
+                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Down))
+                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownLeft))
+                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpLeft))
+
+
+        
+        ## use this, do you mean like legal_actions[random(len(legalactions))]
+        # self.total = len(legal_actions), Im not sure what you mean here
+        # need to write a function to choose which child nodes to store
+            # pop and append child nodes in self.children
+        # legal_actions.clear() # What is this used for?
+        return legal_actions
+        
 
     # Refer to teachers code, not that HexPos is used, not purely coordinates:colour, power
     # We need to keep track of what dictionary we are using, may need to deep copy, because dictionaries are like pointers to arrays in C

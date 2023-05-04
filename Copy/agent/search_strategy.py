@@ -366,7 +366,6 @@ def mcts(node, max_iterations):
 
         # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
         while not node.board.game_over and node.fully_explored():
-            node.playouts += 1 # Don't think this is needed, this shouldn't be here
             node = node.largest_ucb()
 
         # is a leaf node (expansion)
@@ -374,18 +373,13 @@ def mcts(node, max_iterations):
             node = expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
 
         # Simulation (only simulate nodes, where there still exist unexplored children)
-        simulate(node)
-        backpropogate(value)
+        # Simulation (simulate: winner automatically occurs if node at terminal state?)
+        winner = simulate(node)
 
-
-        if node.children is None:
-            value = simulate(node)
-            # backpropagation
-            backpropagate(value)
-
-        count += 1
+        # Backpropogation (update "all" parents)
+        backpropogate(value, winner)
+    
     return best_action() # need to write function for this:  
-
 
 
 '''

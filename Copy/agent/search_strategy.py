@@ -24,6 +24,8 @@ To do:
     Also: 
     - Suppose an action was done, we need to know what the board would look like after the action was applied (can possibly
     copy code from referee?)
+
+    avoid obviously bad moves, i.e. ones that kill yourself. R1 spread towards R6 kills both of them, same as spawning right next to enenmy
 '''
 
 
@@ -126,6 +128,7 @@ class BOARD:
         self.turns = turns
 
     # Refer to teachers code, not that HexPos is used, not purely coordinates:colour, power
+    # We need to keep track of what dictionary we are using, may need to deep copy, because dictionaries are like pointers to arrays in C
     def apply_action(self, action: Action): # turn() function used in referee > game > __init__.py
         match action: 
             case SpawnAction():
@@ -136,33 +139,57 @@ class BOARD:
                 raise ValueError("This isn't supposed to happen. The only 2 actions should be Spread and Spawn ") # Not sure whether Raise ValueError works
 
 
-
-
     # Function that takes an SpawnAction as input and updates the board accordingly
     def resolve_spawn_action(self, action: SpawnAction):
+
         # self.validate?. need to make sure argument types are correct, and board position is not currently occupied?
         
         cell = action.cell   
         
+        # Can't spawn when total power of board is already at max power
         if (self.total_power >= MAX_POWER):
             raise ValueError("Not supposed to happen? L95. Max power already reached") 
         
         colour = self.player_turn()
-         
+        from_cell = action.cell
         
+        # Update dictionary with new spawn action
+        coordinates = (from_cell.r, from_cell.q)
+        self.grid_state[coordinates] = (colour, 1) 
 
-
-
+        
     # Function that takes a SpreadAction as input and updates the board accordingly
     def resolve_spread_action(self, action: SpreadAction):
         # self.validate 
 
+        # Setup: current colour turn, get hex position (internet seems to say we can use hexpos without modifying) and direction
         colour = self.player_turn()
         from_cell, dir = action.cell, action.direction
-         
+        
+        # Delete cell where spreading originates
+        del self.board[from_cell]
+
+        # Update the board_grid state
+        for i in range(self.board[from_cell][1]):
+            # Location of coordinate spread position
+            spread_coord = from_cell + (i + 1) * dir
+
+            # If coordinate to spread inside dictionary: delete node if power already 6, otherwise change colour and add one to original power 
+            if spread_coord in self.board:
+                if self.board[spread_coord][1] == 6:
+                    del self.board[spread_coord]
+                else:
+                    self.board[spread_coord] = (colour, self.board[spread_coord][1] + 1)
+            # Otherwise, coordinate to spread no currently occupied, so spawn a new node 
+            else:
+                self.board[spread_coord] = (colour, 1)
+ 
     
-    # can probably use @property for these types of functions    
-    # Function that evalutes the board turns and returns the player colour that is to play in the current turn (Red: even, Blue: odd )
+    @property 
+    # Function that evalutes the board turns and returns the player colour that is to play in the current turn (Red: even, Blue: odd)
+    '''
+    O(1), just accessing stuff
+    '''
     def player_turn(self) -> str:
         # Red's turn when total turns is even
         if self.turns % 2 == 0:

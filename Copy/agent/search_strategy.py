@@ -150,40 +150,102 @@ class BOARD:
         if (self.total_power >= MAX_POWER):
             raise ValueError("Not supposed to happen? L95. Max power already reached") 
         
-        colour = self.player_turn()
+        colour = self.player_turn
         from_cell = action.cell
         
         # Update dictionary with new spawn action
         coordinates = (from_cell.r, from_cell.q)
-        self.grid_state[coordinates] = (colour, 1) 
+        self.grid_state[coordinates] = (colour, 1)
 
-        
-    # Function that takes a SpreadAction as input and updates the board accordingly
+        # Update grid_state / board fields
+        if colour == 'R':
+            self.num_red += 1:
+        else:
+            self.num_blue += 1
+
+        self.total_power += 1
+        self.turns += 1
+
+
+    # Function that takes a SpreadAction as input and updates the board accordingly (torus structure, and tuple addition)
     def resolve_spread_action(self, action: SpreadAction):
         # self.validate 
 
         # Setup: current colour turn, get hex position (internet seems to say we can use hexpos without modifying) and direction
-        colour = self.player_turn()
+        colour = self.player_turn
         from_cell, dir = action.cell, action.direction
-        
-        # Delete cell where spreading originates
-        del self.board[from_cell]
 
-        # Update the board_grid state
+        if (self.board[from_cell][0] != colour):
+            raise ValueError("Spread origin node doesn't belong to the current colour")
+        
+        # Delete cell where spreading originates and update board fields (number of nodes of the colour is reduced by 1)
+        del self.board[from_cell]
+        if colour == 'R':
+            self.num_red -= 1
+        else:
+            self.num_blue -= 1
+
+        # Update the board_grid grid_state
         for i in range(self.board[from_cell][1]):
-            # Location of coordinate spread position
-            spread_coord = from_cell + (i + 1) * dir
+            # Location of coordinate spread position: make sure coordinate in torus structure 
+            spread_coord = add_tuple(from_cell, mult_tuple(dir, i + 1))
+            spread_coord = fix_tuple(spread_coord)
 
             # If coordinate to spread inside dictionary: delete node if power already 6, otherwise change colour and add one to original power 
             if spread_coord in self.board:
+
+                # If spread_coord has a power 6 node, it will disappear. Update board fields accordingly
                 if self.board[spread_coord][1] == 6:
+                    if eval_colour(spread_coord) == 'R':
+                        self.num_red -= 1
+                    else:
+                        self.num_blue -= 1
+
+                    self.total_power -= 7 # power lost is 1 + 6
                     del self.board[spread_coord]
+
+                # Otherwise, spread action: original colour changes and original power += 1 
                 else:
                     self.board[spread_coord] = (colour, self.board[spread_coord][1] + 1)
-            # Otherwise, coordinate to spread no currently occupied, so spawn a new node 
+
+                    # Enemy node was eaten while spreading (total power doesn't change)
+                    if colour != eval_colour(spread_coord):
+                        if colour == 'R':
+                            num_red += 1
+                            num_blue -= 1
+                        else:
+                            num_red -= 1
+                            num_blue += 1
+                        
+
+            # Otherwise, coordinate to spread no currently occupied, so spawn a new node (total power doesn't change)
             else:
                 self.board[spread_coord] = (colour, 1)
- 
+                if colour == 'R':
+                    num_red += 1
+                else:
+                    num_blue += 1
+
+        self.turns += 1
+
+    
+
+    # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
+    def eval_colour(coordinate):
+        return self.board[coordinate][0]
+
+    # Function that does vector addition for 2 coordinates
+    def add_tuple(a, b):
+        return (a[0] + b[0], a[1] + b[1])
+
+    # Function that does scalar multiplication on the tuple a
+    def mult_tuple(a, scalar):
+        return (scalar * a[0], scalar * a[1])
+    
+    # Function that "fixes" the tuple so that the tuple remains in the torus structure
+    def fix_tuple(a):
+        return (a[0] % 7, a[1] % 7)
+
     
     @property 
     # Function that evalutes the board turns and returns the player colour that is to play in the current turn (Red: even, Blue: odd)

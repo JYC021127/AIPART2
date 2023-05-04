@@ -63,19 +63,24 @@ class NODE:
 
         legal_actions = []
         board = self.board
-
-        # While total power of board state < 49, all empty positions are valid spawn actions
+        flag = 0
+       
+        # Using flag to flag whether board is eligible for spawning
+        if board.total_power < MAX_POWER:
+            flag = 1
+        
+        # While total power of board state < 49, all empty positions are valid spawn actions, but we can also spread
         for x in range(0, 7):
             for y in range(0, 7):
                 coord = (x, y)
-                if board.total_power < MAX_POWER: # flag? 
+                if flag: # flag? 
                     # spawn action
                     if coord not in board.grid_state:
                         legal_actions.append(SpawnAction(HexPos(coord[0], coord[1])))
                     
-                # spread action
-                else:
-                    if board.grid_state[coord][0] == board.player_turn():
+                # spread action, this can happen independent to the total power of the board state 
+                if coord in board.grid_state: # Check whether value inside, otherwise it raises key error i think
+                    if board.grid_state[coord][0] == board.player_turn:
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Up))
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpRight))
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownRight))

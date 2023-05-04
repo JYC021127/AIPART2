@@ -41,20 +41,18 @@ MAX_DEPTH = 10  # CHANGE THIS LATER
 class NODE:
     # These are independent and not shared
     def __init__(self, board, action = None, parent = None, children = None, total = 0, wins = 0, playouts = 0):
-        self.board = board # Current configuration of the board (dictionary format) 
+        self.board = board # Current grid_state, may need to change the data structure to cater for HexPos since we are using teachers actions code 
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
         self.children = children if children is not None else [] # List of children nodes, defined as empty list if children is None, not sure whether this works yet. 
-        self.total = total
-       #self.actions_left = actions_left if actions_left it not None else [] 
-        # if children is None, assign an empty list to the field
+        self.total = total # Initial total moves of the game state? 
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
         
 
     # Methods of the node: i.e. Appending children to node, expand node (get on of its childrens, based on a particular legal move), backpropogating, 
     
-    # Method that adds child node to self.children (list of children)
+    # Method that adds child node to self.children (list of children) 
     def add_child(self, child):
         self.children.append(child)
     
@@ -89,7 +87,6 @@ class NODE:
             # pop and append child nodes in self.children
         legal_actions.clear()
     
-    # check if this node has been fully expanded
     def fully_explored(self):
         return self.playouts >= self.total
 
@@ -128,10 +125,7 @@ class BOARD:
         self.total_power = total_power
         self.turns = turns
 
-    # Function that takes some action as input (spread or spawn), and updates the board accordingly
-    # Planning to read teachers code before writing this, not sure how to include Actions inside input
-    # Wonder whether this can be imported from the teachers code, but it seems quite hard. Don't really know what
-    # the teacher is writing. Perhaps just copy the idea of the teachers code
+    # Refer to teachers code, not that HexPos is used, not purely coordinates:colour, power
     def apply_action(self, action: Action): # turn() function used in referee > game > __init__.py
         match action: 
             case SpawnAction():
@@ -143,9 +137,6 @@ class BOARD:
 
 
 
-
-    # Need to somehow know that player colour, the action doesn't provide any information about the colour to apply
-    # But we can use that red is always turn 0, blue is always turn 1 -> red is always even, and blue is always odd turn -> turns % 2 == 0 or not to determine colour
 
     # Function that takes an SpawnAction as input and updates the board accordingly
     def resolve_spawn_action(self, action: SpawnAction):
@@ -211,33 +202,6 @@ class BOARD:
                 if self.num_blue != 0:
                     raise ValueError("Something is wrong, perhaps the ending condition is not satisfied")
                 return 'R'
-
-
-
-
-
-
-    # Function, unplanned yet, to work out who is the winner
-    '''
-def evaluate_winner(grid_state)
-    if (grid_state.turns >= 343):
-        return max_turn_game_result(grid_state, player_colour) # Return whether win, lose or draw
-
-    if (grid_state.num_red == 0 or grid_state.num_blue == 0):
-        if (grid_state.num_red== 0 and grid_state.num_blue ==0):
-            return DRAW
-        elif (grid_state.num_red == 0):
-            if (player_colour == RED):
-                return LOSS
-            else:
-                return WIN
-        else:
-            if (player_colour == BLUE):
-                return LOSS
-            else:
-                return WIN
-    return STILL_GOING
-    '''
 
 
 # perform monte carlo tree search

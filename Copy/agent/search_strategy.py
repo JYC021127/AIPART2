@@ -114,27 +114,25 @@ class NODE:
 
     # calculate UCB1 score
     def UCB(self):
-        c = 2   # just testing out
-        value = self.wins/self.playouts
-        return value + c * sqrt(log(self.parent.playouts)/self.playouts)
+        # If node has no playouts, it is automatically infinity due to right sum "exploding"
+        if self.playouts == 0:
+            return float('inf')
+        else:
+            c = 2   # just testing out
+            value = self.wins/self.playouts
+            return value + c * sqrt(log(self.parent.playouts)/self.playouts)
 
-        
-    # returns the child of the node with the largest ucb score
+    # Function that takes a node as input and returns the child node with the largest UCB score
     def largest_ucb(self):
-        flag = 0 # used for the first child
-        largest = 0
+        # Initialize / Setup
+        largest = float('-inf')
         largest_child = None
+
         for child in self.children:
-            if flag == 0:
+            if child.UCB() > largest:
                 largest = child.UCB()
                 largest_child = child
-                flag = 1
-            # select child with larger score
-            else:
-                if child.UCB() == 0 or child.UCB() > largest:
-                    largest = child.UCB()
-                    largest_child = child
-        return largest_child
+        return child
 
             
 # Class representing information relating to the grid

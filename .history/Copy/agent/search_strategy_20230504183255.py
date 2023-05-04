@@ -48,7 +48,7 @@ class NODE:
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
         self.children = children if children is not None else [] # List of children nodes, defined as empty list if children is None, not sure whether this works yet. 
-        self.total = total # total number of possible moves 
+        self.total = total # total number of possible actions
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
          
@@ -65,76 +65,46 @@ class NODE:
     # Function that generates a new child node of the selected node (the selection policy was random)
     def expand(self):
         # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
-        actions = self.get_legal_actions
-        random_action = random.choice(self.actions)
-        actions.clear() # clear list to save memory
+        random_action = random.choice(self.legal_actions)
 
         # Create / Deepcopy original grid and apply the random action
         next_grid = deepcopy(self.board.grid_state)
         next_grid.apply_action(random_action)
 
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
-        child = NODE(board = next_grid, action = random_action, parent = self, children = None, total = len(next_grid.legal_actions))
+        child = NODE(board = next_grid, action = random_action, parent = self, children = None, total = len(next_grid.legal_actions()))
         self.children.append(child)
         return child
 
 
-    # Function that simulates / rollout of the node and returns the colour of the winner
-    def simulate(self):
-
-        # Create a deep copy of the node we can modify, otherwise we end up deleting the node in our tree
-        node = deepcopy(self)
-
-        while not node.board.game_over: 
-            # tmp = node        # don't think we need tmp? since we are deleting node anyway after winner is found
-            node = node.expand() # Generates a new child node randomly (with a random action)
-            # del tmp # Not actually sure if this works, but we are short on memory
-
-        winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
-        del node
-
-        return winner
-
-    # Function that backpropogates the result (either 'R' or 'B' has won), updating the wins and the playouts
-    def backpropogate(self, result):
-        # Set node to itself
-        node = self
-
-        # While node is not None, playouts += 1 , if player turns == winning colour, wins += 1 
-        while node is not None:
-            node.playouts += 1
-            # If result / winner colour == player_turn colour, += 1 
-            if result == node.board.player_turn:
-                node.wins += 1
-            node = node.parent  
-
-    
+   
     # Function that checks whether a node is fully explored based on playouts and total children(True if fully explored, False if not fully explored) 
-    @property
     def fully_explored(self):
         return self.playouts >= self.total
 
 
     # calculate UCB1 score
     def UCB(self):
-        # If node has no playouts, it is automatically infinity due to right sum "exploding"
-        if self.playouts == 0:
-            return float('inf')
-        else:
-            c = 2   # just testing out
-            value = self.wins/self.playouts
-            return value + c * sqrt(log(self.parent.playouts)/self.playouts)
+        c = 2   # just testing out
+        value = self.wins/self.playouts
+        return value + c * sqrt(log(self.parent.playouts)/self.playouts)
 
-    # Function that takes a node as input and returns the child node with the largest UCB score
+        
+    # returns the child of the node with the largest ucb score
     def largest_ucb(self):
-        # Initialize / Setup
-        largest = float('-inf')
+        flag = 0 # used for the first child
+        largest = 0
         largest_child = None
-
         for child in self.children:
-            if child.UCB() > largest:
+            if flag == 0:
                 largest = child.UCB()
                 largest_child = child
+                flag = 1
+            # select child with larger score
+            else:
+                if child.UCB() == 0 or child.UCB() > largest:
+                    largest = child.UCB()
+                    largest_child = child
         return largest_child
 
             
@@ -153,7 +123,6 @@ class BOARD:
     '''
     O(n^2) generally, where n = 7 representing 7 by 7 grid, accessing dictionary is constant on average, appending to list is O(1) on average, with worst case O(n) 
     '''
-    @property
     def get_legal_actions(self): 
 
         legal_actions = []
@@ -224,7 +193,7 @@ class BOARD:
 
         # Update grid_state / board fields
         if colour == 'R':
-            self.num_red += 1
+            self.num_red += 1:
         else:
             self.num_blue += 1
 
@@ -312,7 +281,7 @@ class BOARD:
         return (a[0] % 7, a[1] % 7)
 
     
-    @property  #@property means that you don't need () at the end of the method if you're not taking any parameters I think
+    @property 
     # Function that evalutes the board turns and returns the player colour that is to play in the current turn (Red: even, Blue: odd)
     '''
     O(1), just accessing stuff
@@ -320,9 +289,9 @@ class BOARD:
     def player_turn(self) -> str:
         # Red's turn when total turns is even
         if self.turns % 2 == 0:
-            return 'R'
+            return 'r'
         else: #'B' plays on odd turn
-            return 'B'
+            return 'b'
    
 
 
@@ -330,7 +299,6 @@ class BOARD:
     '''
     O(1), just accessing stuff
     '''
-    @property
     def game_over(self):
         return any([
             self.turns >= MAX_TURNS,
@@ -343,7 +311,6 @@ class BOARD:
     '''
     O(1), just accessing stuff and comparing them
     '''
-    @property
     def winner(self):
         # If board reached max number of turns (343 turns), the winner is the colour with the most power 
         if self.turns >= MAX_TURNS:
@@ -370,26 +337,39 @@ def mcts(node, max_iterations):
     count = 0
     while count < max_iterations:
 
+
         # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
-        while not node.board.game_over and node.fully_explored:
+        while not node.board.game_over and node.fully_explored():
+            node.playouts += 1 # Don't think this is needed, this shouldn't be here
             node = node.largest_ucb()
 
         # is a leaf node (expansion)
-        if not node.board.game_over and not node.fully_explored:
+        if not node.board.game_over and not node.fully_explored():
             node = expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
-        
+
         # Simulation (only simulate nodes, where there still exist unexplored children)
-        # Simulation (simulate: winner automatically occurs if node at terminal state?)
-        winner = simulate(node)
-        # Backpropogation (update "all" parents)
-        backpropogate(value, winner)
+        simulate(node)
+        backpropogate(value)
+
+
+        if node.children is None:
+            value = simulate(node)
+            # backpropagation
+            backpropagate(value)
 
         count += 1
-
     return best_action() # need to write function for this:  
 
 
-'''
+# expansion, store partial actions as child nodes
+def expand(self):
+    # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
+    random_action = random.choice(self.legal_actions)
+    next_grid = deepcopy(self.board.grid_state)
+    next_grid.apply_action
+    
+
+
 # simulation, play randomly
 def simulate(node):
     depth = 0
@@ -402,5 +382,3 @@ def simulate(node):
         random_action = actions[random_index]
         play(random_action) # need to write this: play the action and change the node to the result of action
         depth += 1
-
-'''

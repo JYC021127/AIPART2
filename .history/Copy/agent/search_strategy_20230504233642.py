@@ -48,7 +48,7 @@ class NODE:
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
         self.children = children if children is not None else [] # List of children nodes, defined as empty list if children is None, not sure whether this works yet. 
-        self.total = total # total number of possible moves 
+        self.total = total # Initial total moves of the game state? 
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
          
@@ -372,21 +372,26 @@ def mcts(node, max_iterations):
 
         # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
         while not node.board.game_over and node.fully_explored:
+            node.playouts += 1 # Don't think this is needed, this shouldn't be here
             node = node.largest_ucb()
 
         # is a leaf node (expansion)
         if not node.board.game_over and not node.fully_explored:
             node = expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
-        
+
         # Simulation (only simulate nodes, where there still exist unexplored children)
-        # Simulation (simulate: winner automatically occurs if node at terminal state?)
-        winner = simulate(node)
-        # Backpropogation (update "all" parents)
-        backpropogate(value, winner)
+        value = simulate(node)
+        backpropogate(value)
+
+
+        if node.children is None:
+            value = simulate(node)
+            # backpropagation
+            backpropagate(value)
 
         count += 1
-
     return best_action() # need to write function for this:  
+
 
 
 '''

@@ -48,7 +48,7 @@ class NODE:
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
         self.children = children if children is not None else [] # List of children nodes, defined as empty list if children is None, not sure whether this works yet. 
-        self.total = total # total number of possible moves 
+        self.total = total # Initial total moves of the game state? 
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
          
@@ -65,16 +65,14 @@ class NODE:
     # Function that generates a new child node of the selected node (the selection policy was random)
     def expand(self):
         # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
-        actions = self.get_legal_actions
-        random_action = random.choice(self.actions)
-        actions.clear() # clear list to save memory
+        random_action = random.choice(self.legal_actions)
 
         # Create / Deepcopy original grid and apply the random action
         next_grid = deepcopy(self.board.grid_state)
         next_grid.apply_action(random_action)
 
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
-        child = NODE(board = next_grid, action = random_action, parent = self, children = None, total = len(next_grid.legal_actions))
+        child = NODE(board = next_grid, action = random_action, parent = self, children = None, total = len(next_grid.legal_actions()))
         self.children.append(child)
         return child
 
@@ -86,9 +84,9 @@ class NODE:
         node = deepcopy(self)
 
         while not node.board.game_over: 
-            # tmp = node        # don't think we need tmp? since we are deleting node anyway after winner is found
-            node = node.expand() # Generates a new child node randomly (with a random action)
-            # del tmp # Not actually sure if this works, but we are short on memory
+            tmp = node
+            node = expand(node) # Generates a new child node randomly (with a random action)
+            del tmp # Not actually sure if this works, but we are short on memory
 
         winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
         del node
@@ -108,9 +106,8 @@ class NODE:
                 node.wins += 1
             node = node.parent  
 
-    
+     
     # Function that checks whether a node is fully explored based on playouts and total children(True if fully explored, False if not fully explored) 
-    @property
     def fully_explored(self):
         return self.playouts >= self.total
 
@@ -135,7 +132,7 @@ class NODE:
             if child.UCB() > largest:
                 largest = child.UCB()
                 largest_child = child
-        return largest_child
+        return child
 
             
 # Class representing information relating to the grid
@@ -153,7 +150,6 @@ class BOARD:
     '''
     O(n^2) generally, where n = 7 representing 7 by 7 grid, accessing dictionary is constant on average, appending to list is O(1) on average, with worst case O(n) 
     '''
-    @property
     def get_legal_actions(self): 
 
         legal_actions = []
@@ -224,7 +220,7 @@ class BOARD:
 
         # Update grid_state / board fields
         if colour == 'R':
-            self.num_red += 1
+            self.num_red += 1:
         else:
             self.num_blue += 1
 
@@ -330,7 +326,6 @@ class BOARD:
     '''
     O(1), just accessing stuff
     '''
-    @property
     def game_over(self):
         return any([
             self.turns >= MAX_TURNS,
@@ -343,7 +338,6 @@ class BOARD:
     '''
     O(1), just accessing stuff and comparing them
     '''
-    @property
     def winner(self):
         # If board reached max number of turns (343 turns), the winner is the colour with the most power 
         if self.turns >= MAX_TURNS:
@@ -371,22 +365,27 @@ def mcts(node, max_iterations):
     while count < max_iterations:
 
         # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
-        while not node.board.game_over and node.fully_explored:
+        while not node.board.game_over and node.fully_explored():
+            node.playouts += 1 # Don't think this is needed, this shouldn't be here
             node = node.largest_ucb()
 
         # is a leaf node (expansion)
-        if not node.board.game_over and not node.fully_explored:
+        if not node.board.game_over and not node.fully_explored():
             node = expand(node) # <- find all possible moves & setting U(n) and N(n) = 0
-        
+
         # Simulation (only simulate nodes, where there still exist unexplored children)
-        # Simulation (simulate: winner automatically occurs if node at terminal state?)
-        winner = simulate(node)
-        # Backpropogation (update "all" parents)
-        backpropogate(value, winner)
+        simulate(node)
+        backpropogate(value)
+
+
+        if node.children is None:
+            value = simulate(node)
+            # backpropagation
+            backpropagate(value)
 
         count += 1
-
     return best_action() # need to write function for this:  
+
 
 
 '''

@@ -420,68 +420,66 @@ class BOARD:
 
 
 class MCT:
-    def __init__(self, root = None):
-        self.root = self.initial_board()
+    def __init__(self):
+        self.root = self.initialize_tree()
 
-    def initial_board(self):
-        return NODE(Board({}, None), None, None, None)
-
-
-# perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backpropogate
-def mcts(tree: MCT, max_iterations):
-    count = 0
-    root = tree.root
-    node = root
-
-    while count < max_iterations: # Can include memory and time constraint in the while loop as well 
-
-        # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
-        while not node.board.game_over and node.fully_explored:
-            node = node.largest_ucb()
-
-        # Expansion: Expand if board not at terminal state and node still has unexplored children
-        if not node.board.game_over and not node.fully_explored:
-            node = node.expand() # <- find all possible moves & setting U(n) and N(n) = 0
-        
-        # Simulation: Simulate newly expanded node or save winner of  the terminal state
-        winner = node.simulate()
-
-        # Backpropogation: Traverse to the root of the tree and update wins and playouts
-        node.backpropogate(winner)
-
-        count += 1
-
-    action = root.best_final_action()
-    # set root to corresponding child action
-    update_tree(tree, root.board.turns%2, action)
-    return action
+    def initialize_tree(self):
+        return NODE(Board({}), None, None, None)
 
 
+    # perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backpropogate
+    def mcts(self, max_iterations):
+        count = 0
+        root = self.root
+        node = root
 
-# def turn(self, color: PlayerColor, action: Action, **referee: dict):
-'''
-Not sure how to do this yet: Get playor colour, assert that this playour turn for our state is same as playour color, 
-find the corresponding child node with the same action as the input
-set that as the new root and delete the parent node 
-hope that python garbage collector will delete the sibling nodes eventually, or manually do it?
-'''
-def update_tree(tree: MCT, color: PlayerColor, action: Action):
-    match action:
-        case SpawnAction(cell):
-            print(f"Testing: {color} SPAWN at {cell}")
-            pass
-        case SpreadAction(cell, direction):
-            print(f"Testing: {color} SPREAD from {cell}, {direction}")
-            pass
+        while count < max_iterations: # Can include memory and time constraint in the while loop as well 
 
-    for child in tree.root.children:
-        # same action as child, set root as child
-        if child.action == action:
-            del tree.root.children
-            tree.root = child
-            break
+            # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
+            while not node.board.game_over and node.fully_explored:
+                node = node.largest_ucb()
 
-    else:
-        raise ValueError("Action not found in children")
+            # Expansion: Expand if board not at terminal state and node still has unexplored children
+            if not node.board.game_over and not node.fully_explored:
+                node = node.expand() # <- find all possible moves & setting U(n) and N(n) = 0
+            
+            # Simulation: Simulate newly expanded node or save winner of  the terminal state
+            winner = node.simulate()
+
+            # Backpropogation: Traverse to the root of the tree and update wins and playouts
+            node.backpropogate(winner)
+
+            count += 1
+
+        action = root.best_final_action()
+        # set root to corresponding child action
+        self.update_tree(self, root.board.turns%2, action)
+        return action
+
+    # def turn(self, color: PlayerColor, action: Action, **referee: dict):
+    '''
+    Not sure how to do this yet: Get playor colour, assert that this playour turn for our state is same as playour color, 
+    find the corresponding child node with the same action as the input
+    set that as the new root and delete the parent node 
+    hope that python garbage collector will delete the sibling nodes eventually, or manually do it?
+    '''
+    def update_tree(self, color: PlayerColor, action: Action):
+        match action:
+            case SpawnAction(cell):
+                print(f"Testing: {color} SPAWN at {cell}")
+                pass
+            case SpreadAction(cell, direction):
+                print(f"Testing: {color} SPREAD from {cell}, {direction}")
+                pass
+
+        for child in self.root.children:
+            # same action as child, set root as child
+            if child.action == action:
+                del self.root.children
+                self.root = child
+                break
+
+        else:
+            raise ValueError("Action not found in children")
 
 

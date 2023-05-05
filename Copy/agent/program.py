@@ -17,11 +17,11 @@ MAX_ITERATIONS = 100
 # this is not a valid strategy for actually playing the game!
 
 class Agent:
-    def __init__(self, color: PlayerColor, mct: MCT, **referee: dict):
+    def __init__(self, color: PlayerColor, **referee: dict):
         """
         Initialise the agent.
         """
-        self.mct = mct 
+        self.mct = MCT()
         self._color = color
         match color:
             case PlayerColor.RED:
@@ -35,10 +35,10 @@ class Agent:
         """
         match self._color:
             case PlayerColor.RED:
-                return mcts(self.mct, MAX_ITERATIONS)
+                return self.mct.mcts(MAX_ITERATIONS)
                 return SpawnAction(HexPos(3, 3))
             case PlayerColor.BLUE:
-                return mcts(self.mct, MAX_ITERATIONS)
+                return self.mct.mcts(MAX_ITERATIONS)
                 # This is going to be invalid... BLUE never spawned!
                 return SpreadAction(HexPos(3, 3), HexDir.Up)
 

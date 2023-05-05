@@ -43,6 +43,9 @@ class Agent:
         """
         Update the agent with the last player's action.
         """
+
+        # For each action, we need to update change the root of our MCTS tree
+
         match action:
             case SpawnAction(cell):
                 print(f"Testing: {color} SPAWN at {cell}")

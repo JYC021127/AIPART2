@@ -411,7 +411,7 @@ class BOARD:
 
 
 
-# perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backproporgate
+# perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backpropogate
 def mcts(node, max_iterations):
     count = 0
     root = node
@@ -434,6 +434,17 @@ def mcts(node, max_iterations):
         count += 1
 
     return root.best_final_action()
+
+
+
+# def turn(self, color: PlayerColor, action: Action, **referee: dict):
+'''
+Not sure how to do this yet: Get playor colour, assert that this playour turn for our state is same as playour color, 
+find the corresponding child node with the same action as the input
+set that as the new root and delete the parent node 
+hope that python garbage collector will delete the sibling nodes eventually, or manually do it?
+'''
+def update_tree(self, color: PlayerColor, action: Action):
 
 
 

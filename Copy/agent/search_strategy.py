@@ -74,10 +74,6 @@ class NODE:
         # Create / Deepcopy original grid and apply the random action
         board = deepcopy(self.board)
         board.apply_action(random_action)
-        print(board.total_power)
-        print(board.turns)
-        print(board.num_blue)
-        print(board.num_red)
 
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
         child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
@@ -365,7 +361,7 @@ class BOARD:
     '''
     @property
     def game_over(self):
-        if self.turns < 2: 
+        if self.turns == 0: 
             return False
 
         return any([
@@ -453,7 +449,7 @@ class MCT:
 
         action = root.best_final_action()
         # set root to corresponding child action
-        # self.update_tree(self.root.board.turns % 2, action)
+        #self.update_tree(self.root.board.turns % 2, action)
         return action
 
     # def turn(self, color: PlayerColor, action: Action, **referee: dict):
@@ -463,14 +459,7 @@ class MCT:
     set that as the new root and delete the parent node 
     hope that python garbage collector will delete the sibling nodes eventually, or manually do it?
     '''
-    def update_tree(self, color: PlayerColor, action: Action):
-        match action:
-            case SpawnAction(cell):
-                print(f"Testing: {color} SPAWN at {cell}")
-                pass
-            case SpreadAction(cell, direction):
-                print(f"Testing: {color} SPREAD from {cell}, {direction}")
-                pass
+    def update_tree(self, action: Action):
 
         for child in self.root.children:
             # same action as child, set root as child

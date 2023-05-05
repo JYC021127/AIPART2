@@ -172,7 +172,7 @@ class NODE:
 # Class representing information relating to the grid
 class BOARD:
     
-    def __init__(self, grid_state, num_blue, num_red, total_power, turns):
+    def __init__(self, state):
         self.grid_state = grid_state
         self.num_blue = num_blue
         self.num_red = num_red

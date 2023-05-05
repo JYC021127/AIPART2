@@ -172,7 +172,7 @@ class NODE:
 # Class representing information relating to the grid
 class BOARD:
     
-    def __init__(self, grid_state, num_blue, num_red, total_power, turns):
+    def __init__(self, state):
         self.grid_state = grid_state
         self.num_blue = num_blue
         self.num_red = num_red
@@ -377,7 +377,7 @@ class BOARD:
     def winner(self):
         # If board reached max number of turns (343 turns), the winner is the colour with the most power 
         if self.turns >= MAX_TURNS:
-            return self.max_power_colour()
+            return max_power_colour()
         # Otherwise, empty board represents draw and the colour without nodes on the board is the LOSING colour 
         else:
             if (self.num_red == 0 and self.num_blue == 0):
@@ -389,22 +389,6 @@ class BOARD:
                     raise ValueError("Something is wrong, perhaps the ending condition is not satisfied")
                 return 'R'
 
-
-    # returns the colour of the player with max power
-    def max_power_colour(self):
-        blue = 0
-        red = 0
-        for info in self.grid_state.values():
-            if info[0] == 'r':
-                red += info[1]
-            else:
-                blue += info[1]
-        
-        if red > blue:
-            return 'R'
-        # winner is blue if red >= blue for now
-        else:
-            return 'B'
 
 
 
@@ -433,7 +417,7 @@ def mcts(node, max_iterations):
 
         count += 1
 
-    return root.best_final_action()
+    return root.best_final_action() # need to write function for this:  
 
 
 

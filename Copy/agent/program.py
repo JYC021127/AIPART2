@@ -37,11 +37,11 @@ class Agent:
         match self._color:
             case PlayerColor.RED:
                 return self.mct.mcts(MAX_ITERATIONS)
-                return SpawnAction(HexPos(3, 3))
+                # return SpawnAction(HexPos(3, 3))
             case PlayerColor.BLUE:
                 return self.mct.mcts(MAX_ITERATIONS)
                 # This is going to be invalid... BLUE never spawned!
-                return SpreadAction(HexPos(3, 3), HexDir.Up)
+                #return SpreadAction(HexPos(3, 3), HexDir.Up)
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
         """
@@ -57,3 +57,13 @@ class Agent:
             case SpreadAction(cell, direction):
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
+        
+        for child in self.mct.root.children:
+            # same action as child, set root as child
+            if child.action == action:
+                del self.mct.root.children
+                self.root = child
+                break
+
+        else:
+            raise ValueError("Action not found in children")

@@ -72,10 +72,12 @@ class NODE:
         del actions
 
         # Create / Deepcopy original grid and apply the random action
-        next_grid = deepcopy(self.board.grid_state)
-        board = BOARD(next_grid, 0, 0, 0, 0)
-        board.initialize()
+        board = deepcopy(self.board)
         board.apply_action(random_action)
+        print(board.total_power)
+        print(board.turns)
+        print(board.num_blue)
+        print(board.num_red)
 
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
         child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
@@ -363,6 +365,9 @@ class BOARD:
     '''
     @property
     def game_over(self):
+        if self.turns < 2: 
+            return False
+
         return any([
             self.turns >= MAX_TURNS,
             self.num_red == 0,
@@ -433,7 +438,7 @@ class MCT:
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             while not node.board.game_over and node.fully_explored:
                 node = node.largest_ucb()
-            
+
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if node.board.grid_state == {} or not node.board.game_over and not node.fully_explored:
                 node = node.expand() # <- find possible moves
@@ -448,7 +453,7 @@ class MCT:
 
         action = root.best_final_action()
         # set root to corresponding child action
-        self.update_tree(self.root.board.turns % 2, action)
+        # self.update_tree(self.root.board.turns % 2, action)
         return action
 
     # def turn(self, color: PlayerColor, action: Action, **referee: dict):

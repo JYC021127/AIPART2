@@ -30,7 +30,7 @@ To do:
 
 
 from referee.game import \
-    PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
+    PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir, Board
 
 from math import *
 from copy import deepcopy
@@ -167,10 +167,10 @@ class NODE:
     def best_final_action(self):
         # self.children is list of child nodes, lamda takes child nodes and returns playouts, max returns the child of the most playouts
         best_child = max(self.children, key = lambda child: child.playouts)
+
         return best_child.action
 
 
-            
 # Class representing information relating to the grid
 class BOARD:
     
@@ -419,12 +419,20 @@ class BOARD:
             total_power += info[1]
 
 
+class MCT:
+    def __init__(self, root = None):
+        self.root = self.initial_board()
+
+    def initial_board(self):
+        return NODE(Board({}, None), None, None, None)
 
 
 # perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backpropogate
-def mcts(node, max_iterations):
+def mcts(tree: MCT, max_iterations):
     count = 0
-    root = node
+    root = tree.root
+    node = root
+
     while count < max_iterations: # Can include memory and time constraint in the while loop as well 
 
         # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
@@ -443,7 +451,10 @@ def mcts(node, max_iterations):
 
         count += 1
 
-    return root.best_final_action()
+    action = root.best_final_action()
+    # set root to corresponding child action
+    update_tree(tree, root.board.turns%2, action)
+    return action
 
 
 
@@ -454,7 +465,23 @@ find the corresponding child node with the same action as the input
 set that as the new root and delete the parent node 
 hope that python garbage collector will delete the sibling nodes eventually, or manually do it?
 '''
-def update_tree(self, color: PlayerColor, action: Action):
+def update_tree(tree: MCT, color: PlayerColor, action: Action):
+    match action:
+        case SpawnAction(cell):
+            print(f"Testing: {color} SPAWN at {cell}")
+            pass
+        case SpreadAction(cell, direction):
+            print(f"Testing: {color} SPREAD from {cell}, {direction}")
+            pass
 
+    for child in tree.root.children:
+        # same action as child, set root as child
+        if child.action == action:
+            del tree.root.children
+            tree.root = child
+            break
+
+    else:
+        raise ValueError("Action not found in children")
 
 

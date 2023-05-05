@@ -3,4 +3,4 @@
 
 from .program import Agent
 
-from .search_strategy import Agent
+from .search_strategy import *

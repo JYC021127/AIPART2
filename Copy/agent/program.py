@@ -4,10 +4,10 @@
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
 
-# from .search_strategy import # Note written yet 
+from .search_strategy import * # Note written yet 
 
 # Planning to write a function in a different python file and just import it into this afterwards 
-
+MAX_ITERATIONS = 100
 
 
 # This is the entry point for your game playing agent. Currently the agent
@@ -17,10 +17,11 @@ from referee.game import \
 # this is not a valid strategy for actually playing the game!
 
 class Agent:
-    def __init__(self, color: PlayerColor, **referee: dict):
+    def __init__(self, color: PlayerColor, mct: MCT, **referee: dict):
         """
         Initialise the agent.
         """
+        self.mct = mct 
         self._color = color
         match color:
             case PlayerColor.RED:
@@ -34,8 +35,10 @@ class Agent:
         """
         match self._color:
             case PlayerColor.RED:
+                return mcts(self.mct, MAX_ITERATIONS)
                 return SpawnAction(HexPos(3, 3))
             case PlayerColor.BLUE:
+                return mcts(self.mct, MAX_ITERATIONS)
                 # This is going to be invalid... BLUE never spawned!
                 return SpreadAction(HexPos(3, 3), HexDir.Up)
 

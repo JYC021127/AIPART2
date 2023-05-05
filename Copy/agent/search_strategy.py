@@ -67,8 +67,8 @@ class NODE:
     '''
     def expand(self):
         # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
-        actions = self.get_legal_actions
-        random_action = random.choice(self.actions)
+        actions = self.board.get_legal_actions
+        random_action = random.choice(actions)
         del actions
 
         # Create / Deepcopy original grid and apply the random action

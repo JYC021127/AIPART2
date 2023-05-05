@@ -21,7 +21,7 @@ class Agent:
         """
         Initialise the agent.
         """
-        self.mct = MCT()
+        self.mct = MCT(NODE(BOARD({})))
         self._color = color
 
         match color:

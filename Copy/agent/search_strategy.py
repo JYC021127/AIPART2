@@ -428,10 +428,10 @@ class MCT:
     def mcts(self, max_iterations):
         count = 0
         root = self.root
-        node = root
 
         while count < max_iterations: # Can include memory and time constraint in the while loop as well 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
+            node = root
             while not node.board.game_over and node.fully_explored:
                 node = node.largest_ucb()
 

@@ -21,7 +21,7 @@ class Agent:
         """
         Initialise the agent.
         """
-        self.mct = MCT(NODE(BOARD({})))
+        self.mct = MCT(NODE(BOARD({}), total = 49))
         self._color = color
 
         match color:
@@ -49,7 +49,7 @@ class Agent:
         """
 
         # For each action, we need to update change the root of our MCTS tree
-
+        flag = 0
         match action:
             case SpawnAction(cell):
                 print(f"Testing: {color} SPAWN at {cell}")
@@ -57,13 +57,15 @@ class Agent:
             case SpreadAction(cell, direction):
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
-        
+
         for child in self.mct.root.children:
             # same action as child, set root as child
             if child.action == action:
                 del self.mct.root.children
-                self.root = child
+                self.mct.root = child
+                flag = 1
                 break
 
-        else:
+        
+        if flag == 0:
             raise ValueError("Action not found in children")

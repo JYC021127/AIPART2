@@ -78,7 +78,7 @@ class NODE:
         board.apply_action(random_action)
 
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
-        child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
+        child = NODE(board = board, action = random_action, parent = self, children = None, total = len(next_grid.legal_actions))
         self.children.append(child)
         return child
 

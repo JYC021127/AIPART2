@@ -62,6 +62,9 @@ class NODE:
    
 
     # Function that generates a new child node of the selected node (the selection policy was random)
+    '''
+    O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
+    '''
     def expand(self):
         # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
         actions = self.get_legal_actions
@@ -77,8 +80,12 @@ class NODE:
         self.children.append(child)
         return child
 
-
+    
     # Function that simulates / rollout of the node and returns the colour of the winner
+    '''
+    O(n^2) + (depth of game) * O(n^2), deep copy + expand * depth of tree. There is no branching factor because it is a "stick" that is repeately deleted
+    Time complexity is mostly influenced by the length of the game
+    '''
     def simulate(self):
 
         # Create a deep copy of the node we can modify, otherwise we end up deleting the node in our tree
@@ -95,6 +102,9 @@ class NODE:
         return winner
 
     # Function that backpropogates the result (either 'R' or 'B' has won), updating the wins and the playouts
+    '''
+    O(d), where d is the depth of the tree. Updating playouts are generally O(1) 
+    '''
     def backpropogate(self, result):
         # Set node to itself
         node = self
@@ -109,22 +119,33 @@ class NODE:
 
      
     # Function that checks whether a node is fully explored based on playouts and total children(True if fully explored, False if not fully explored) 
+    '''
+    O(1)
+    '''
     @property
     def fully_explored(self):
         return self.playouts >= self.total
 
-
+    
     # calculate UCB1 score
-    def UCB(self):
+    '''
+    O(1)
+    '''
+    def UCB(self, c = 2):
         # If node has no playouts, it is automatically infinity due to right sum "exploding"
         if self.playouts == 0:
             return float('inf')
         else:
-            c = 2   # just testing out
             value = self.wins/self.playouts
             return value + c * sqrt(log(self.parent.playouts)/self.playouts)
+    
+
 
     # Function that takes a node as input and returns the child node with the largest UCB score
+    '''
+    O(n), where n is the number of children. Calculations are generally O(1) 
+    '''
+    @property
     def largest_ucb(self):
         # Initialize / Setup
         largest = float('-inf')
@@ -135,6 +156,17 @@ class NODE:
                 largest = child.UCB()
                 largest_child = child
         return largest_child
+
+
+    # Function that loops over the children of the node (generally the root node), and outputs the best action: based on total playouts at the moment
+    '''
+    O(n), where n is the number of children, accessing playouts is generally O(1)
+    '''
+    def best_final_action(self):
+        # self.children is list of child nodes, lamda takes child nodes and returns playouts, max returns the child of the most playouts
+        best_child = max(self.children, key = lambda child: child.playouts)
+        return best_child.action
+
 
             
 # Class representing information relating to the grid
@@ -184,8 +216,7 @@ class BOARD:
         return legal_actions
         
 
-    # Refer to teachers code, not that HexPos is used, not purely coordinates:colour, power
-    # We need to keep track of what dictionary we are using, may need to deep copy, because dictionaries are like pointers to arrays in C
+    # Function that takes an action (either spread or spawn), and applies the action to the board / gridstate
     def apply_action(self, action: Action): # turn() function used in referee > game > __init__.py
         match action: 
             case SpawnAction():
@@ -197,16 +228,18 @@ class BOARD:
 
 
     # Function that takes an SpawnAction as input and updates the board accordingly
+    '''
+    O(1)
+    '''
     def resolve_spawn_action(self, action: SpawnAction):
 
-        # self.validate?. need to make sure argument types are correct, and board position is not currently occupied?
-        
-        cell = action.cell   
-        
+        # Could add a self.validate to confirm everything is going as expected
+          
         # Can't spawn when total power of board is already at max power
         if (self.total_power >= MAX_POWER):
             raise ValueError("Not supposed to happen? L95. Max power already reached") 
         
+        # Setup: determine colour of current turn, and where cell will spawn
         colour = self.player_turn
         from_cell = action.cell
         
@@ -225,12 +258,17 @@ class BOARD:
 
 
     # Function that takes a SpreadAction as input and updates the board accordingly (torus structure, and tuple addition)
+    '''
+    O(power), number of coordinates = power, where dictionary look up occurs for each of them, and fields are updated
+    '''
     def resolve_spread_action(self, action: SpreadAction):
         # self.validate 
 
         # Setup: current colour turn, get hex position (internet seems to say we can use hexpos without modifying) and direction
         colour = self.player_turn
-        from_cell, dir = action.cell, action.direction
+        cell, dir = action.cell, action.direction
+
+        from_cell = hash((cell.r, cell.q))
 
         if (self.board[from_cell][0] != colour):
             raise ValueError("Spread origin node doesn't belong to the current colour")
@@ -360,39 +398,25 @@ class BOARD:
 # perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backproporgate
 def mcts(node, max_iterations):
     count = 0
-    while count < max_iterations:
+    while count < max_iterations: # Can include memory and time constraint in the while loop as well 
 
         # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
         while not node.board.game_over and node.fully_explored:
             node = node.largest_ucb()
 
-        # is a leaf node (expansion)
+        # Expansion: Expand if board not at terminal state and node still has unexplored children
         if not node.board.game_over and not node.fully_explored:
             node = node.expand() # <- find all possible moves & setting U(n) and N(n) = 0
         
-        # Simulation (only simulate nodes, where there still exist unexplored children)
-        # Simulation (simulate: winner automatically occurs if node at terminal state?)
+        # Simulation: Simulate newly expanded node or save winner of  the terminal state
         winner = node.simulate()
-        # Backpropogation (update "all" parents)
+
+        # Backpropogation: Traverse to the root of the tree and update wins and playouts
         node.backpropogate(winner)
 
         count += 1
 
-    return best_action() # need to write function for this:  
+    return node.best_action() # need to write function for this:  
 
 
-'''
-# simulation, play randomly
-def simulate(node):
-    depth = 0
-    while not node.board.game_over() and depth < MAX_DEPTH:
-        # might wanna fix this line, get_legal_actions no longer return a list of actions
-        # need random policy function for what random actions we want?
-        actions = node.get_legal_actions()
-        ####
-        random_index = random.randint(0, len(actions)-1)
-        random_action = actions[random_index]
-        play(random_action) # need to write this: play the action and change the node to the result of action
-        depth += 1
 
-'''

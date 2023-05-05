@@ -147,7 +147,6 @@ class NODE:
     '''
     O(n), where n is the number of children. Calculations are generally O(1) 
     '''
-    @property
     def largest_ucb(self):
         # Initialize / Setup
         largest = float('-inf')
@@ -421,10 +420,7 @@ class BOARD:
 
 class MCT:
     def __init__(self):
-        self.root = self.initialize_tree()
-
-    def initialize_tree(self):
-        return NODE(Board({}), None, None, None)
+        self.root = NODE(BOARD({}))
 
 
     # perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backpropogate
@@ -434,26 +430,25 @@ class MCT:
         node = root
 
         while count < max_iterations: # Can include memory and time constraint in the while loop as well 
-
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             while not node.board.game_over and node.fully_explored:
                 node = node.largest_ucb()
-
+            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.fully_explored:
-                node = node.expand() # <- find all possible moves & setting U(n) and N(n) = 0
+                node = node.expand() # <- find possible moves
             
             # Simulation: Simulate newly expanded node or save winner of  the terminal state
             winner = node.simulate()
 
             # Backpropogation: Traverse to the root of the tree and update wins and playouts
             node.backpropogate(winner)
-
+            
             count += 1
 
         action = root.best_final_action()
         # set root to corresponding child action
-        self.update_tree(self, root.board.turns%2, action)
+        self.update_tree(self, self.root.board.turns%2, action)
         return action
 
     # def turn(self, color: PlayerColor, action: Action, **referee: dict):

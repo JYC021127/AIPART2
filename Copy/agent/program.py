@@ -23,6 +23,7 @@ class Agent:
         """
         self.mct = MCT()
         self._color = color
+
         match color:
             case PlayerColor.RED:
                 print("Testing: I am playing as red")

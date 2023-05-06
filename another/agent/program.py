@@ -6,6 +6,9 @@ from referee.game import \
 
 from .search_strategy import * # Note written yet 
 
+
+from copy import deepcopy
+
 # Planning to write a function in a different python file and just import it into this afterwards 
 MAX_ITERATIONS = 20
 
@@ -77,10 +80,19 @@ class Agent:
                 flag = 1
                 break
 
+#        if flag == 0:
+#            previous = self.mct.root
+#            new = previous.board.apply_action(action)
+#            previous.print_node_data
+#            previous.board.print_board_data
+#            self.mct.root = NODE(new, total = len(new.get_legal_actions))
+#            del previous
+
         if flag == 0:
-            previous = self.mct.root
-            new = previous.board.apply_action(action)
-            previous.print_node_data
-            previous.board.print_board_data
-            self.mct.root = NODE(new, total = len(new.get_legal_actions))
+            previous = self.mct.root #previous root 
+#            print("previous board is:")
+#            previous.board.print_board_data
+
+            previous.board.apply_action(action)
+            self.mct.root = NODE(board = previous.board, total = len(previous.board.get_legal_actions))
             del previous

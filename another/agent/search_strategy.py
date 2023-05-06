@@ -280,7 +280,9 @@ class BOARD:
         
         from_cell = (int(cell.r), int(cell.q))
         print(f"from cell is {from_cell}")    
-
+        print(f"direction is {dir}")
+        dir = (int(dir.r), int(dir.q))
+        print(f"direction after is {dir}")
         self.print_board_data
 
         if (self.grid_state[from_cell])[0] != colour:
@@ -339,7 +341,7 @@ class BOARD:
 
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
     def eval_colour(self, coordinate):
-        return self.board[coordinate][0]
+        return self.grid_state[coordinate][0]
 
     # Function that does vector addition for 2 coordinates
     def add_tuple(self, a, b):

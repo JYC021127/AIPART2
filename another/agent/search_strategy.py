@@ -139,7 +139,7 @@ class NODE:
 
         return winner
 
-    # Function that backpropogates the result (either 'R' or 'B' has won), updating the wins and the playouts
+    # Function that backpropogates the result (either 'r' or 'b' has won), updating the wins and the playouts
     '''
     O(d), where d is the depth of the tree. Updating playouts are generally O(1) 
     '''
@@ -296,7 +296,7 @@ class BOARD:
         self.grid_state[coordinates] = (colour, 1)
 
         # Update grid_state / board fields
-        if colour == 'R':
+        if colour == 'r':
             self.num_red += 1
         else:
             self.num_blue += 1
@@ -334,7 +334,7 @@ class BOARD:
 
                 # If spread_coord has a power 6 node, it will disappear. Update board fields accordingly
                 if (self.grid_state[spread_coord])[1] == 6:
-                    if self.eval_colour(spread_coord) == 'R':
+                    if self.eval_colour(spread_coord) == 'r':
                         self.num_red -= 1
                     else:
                         self.num_blue -= 1
@@ -346,7 +346,7 @@ class BOARD:
                 else:
                     # Enemy node was eaten while spreading (total power doesn't change)
                     if colour != self.eval_colour(spread_coord):
-                        if colour == 'R':
+                        if colour == 'r':
                             self.num_red += 1
                             self.num_blue -= 1
                         else:
@@ -360,13 +360,13 @@ class BOARD:
             # Otherwise, coordinate to spread no currently occupied, so spawn a new node (total power doesn't change)
             else:
                 self.grid_state[spread_coord] = (colour, 1)
-                if colour == 'R':
+                if colour == 'r':
                     self.num_red += 1
                 else:
                     self.num_blue += 1
     
         # Delete cell where spreading originates and update board fields (number of nodes of the colour is reduced by 1)
-        if colour == 'R':
+        if colour == 'r':
             self.num_red -= 1
         else:
             self.num_blue -= 1
@@ -399,9 +399,9 @@ class BOARD:
     def player_turn(self) -> str:
         # Red's turn when total turns is even
         if self.turns % 2 == 0:
-            return 'R'
-        else: #'B' plays on odd turn
-            return 'B'
+            return 'r'
+        else: #'b' plays on odd turn
+            return 'b'
    
 
 
@@ -435,11 +435,11 @@ class BOARD:
             if (self.num_red == 0 and self.num_blue == 0):
                 return None # need a colour here that represents draw, perhaps use "W" as a global constant ("WHITE"), neither blue or red has won
             elif self.num_red == 0:
-                return 'B'
+                return 'b'
             else: # self.num_blue == 0
                 if self.num_blue != 0:
                     raise ValueError("Something is wrong, perhaps the ending condition is not satisfied")
-                return 'R'
+                return 'r'
 
 
     # returns the colour of the player with max power
@@ -453,10 +453,10 @@ class BOARD:
                 blue += info[1]
         
         if red > blue:
-            return 'R'
+            return 'r'
         # winner is blue if red >= blue for now
         else:
-            return 'B'
+            return 'b'
 
 
     # Function used for debugging purposes: prints the fields / attributes of the BOARD CLASS

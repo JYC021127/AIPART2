@@ -69,6 +69,12 @@ class NODE:
     def expand(self):
         # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
         actions = self.board.get_legal_actions
+
+#        # Testing:
+#        print("Board State")
+#        self.board.print_board_data
+#        print("Available actions:", actions)
+
         random_action = random.choice(actions)
         del actions
 
@@ -172,6 +178,7 @@ class NODE:
     # For debugging purposes: function that prints the fild of the NODE class
     @property
     def print_node_data(self):
+        print("Printing Node data:")
         print(f"The action is {self.action}")
         print(f"The parent node is {self.parent}")
         print(f"The children of the node are {self.children}")
@@ -437,6 +444,7 @@ class BOARD:
     # Function used for debugging purposes: prints the fields / attributes of the BOARD CLASS
     @property
     def print_board_data(self):
+        print("Printing Board Data:")
         print(f"The grid state is {self.grid_state}")
         print(f"The number of blue nodes on the board is {self.num_blue}")
         print(f"The number of red nodes on the board is {self.num_red}")
@@ -490,6 +498,11 @@ class MCT:
         action = root.best_final_action()
         # set root to corresponding child action
         #self.update_tree(self.root.board.turns % 2, action)
+        
+        root.print_node_data
+        root.board.print_board_data
+        print("Legal actions are:")
+        print(root.board.get_legal_actions)
         return action
 
     # def turn(self, color: PlayerColor, action: Action, **referee: dict):

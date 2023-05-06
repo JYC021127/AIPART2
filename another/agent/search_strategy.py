@@ -42,6 +42,8 @@ import random
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 
+class DIR:
+    coord = [(0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1), (1, 0)]
 # Class representing Nodes of the Monte Carlo Tree
 class NODE:
     def __init__(self, board, action = None, parent = None, children = None, total = 0, wins = 0, playouts = 0):
@@ -62,8 +64,8 @@ class NODE:
     '''
     def add_child(self, child):
         self.children.append(child)
-   
-
+             
+    
     # Function that generates a new child node of the selected node (the selection policy was random)
     '''
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
@@ -78,7 +80,8 @@ class NODE:
 #        print("Available actions:", actions)
 
 
-        random_action = random.choice(actions)
+        #random_action = random.choice(actions)
+        random_action = self.board.heuristic_1(actions)
         del actions
 
         # Create / Deepcopy original grid and apply the random action
@@ -100,12 +103,6 @@ class NODE:
 
         # Create a deep copy of the node we can modify, otherwise we end up deleting the node in our tree
         node = deepcopy(self)
-#        while not node.board.game_over: 
-#            # shouldn't create new node here ############################
-#            # modify the node directly
-#            tmp = node        
-#            node = tmp.expand() # Generates a new child node randomly (with a random action)
-#            del tmp
 
         node.parent = None
         node.children = None
@@ -138,6 +135,7 @@ class NODE:
         del node
 
         return winner
+
 
     # Function that backpropogates the result (either 'r' or 'b' has won), updating the wins and the playouts
     '''
@@ -373,6 +371,188 @@ class BOARD:
         del self.grid_state[from_cell]
         
     
+    '''
+    Heuristic:
+    * stop if 
+        * any obvious move is found
+
+    obvious:
+    - killing opponent (done)
+        - usually spread actions
+
+    good:
+    - spawn near yourself
+    - spawn in a group/line
+    - spread near yourself ???? 
+        - what if this also means spreading near opponent)
+        - maybe count the number of opponent cell vs own cell?
+            - if neighbour own cells > opponent cells then it is good
+
+    average:
+    - any move that's not obvious/good/bad
+
+    bad:
+    - wasting a move
+        - spawning next to opponent
+        - spreading towards opponent
+            - if neighbour own cells < opponent cells
+        - killing urself (spreading towards own cell with POWER=6)
+    '''
+
+    # heuristic 1.0 (just trying a weird idea, currently only used in expand())
+    def heuristic_1(self, actions):
+        good = []
+        average = []
+        bad = []
+        for action in actions:
+            colour = self.player_turn
+            score = 0 # used to rank actions that can eat at least 1 cell
+            # positive score is pretty good
+            # score of 0 is average
+            # negative score is really bad
+            # for spawn actions, as long as it is not spawning right next to an enemy, it is good
+                # currently prioritising spread over spawn actions
+
+            tmp = deepcopy(self)
+            tmp.apply_action(action)
+            init_red = self.num_red
+            new_red = tmp.num_red
+            init_blue = self.num_blue
+            new_blue = tmp.num_blue
+
+            # the idea of how score is calculated is here...
+            if colour == 'r':
+                score = (new_red - init_red) + (init_blue - new_blue)
+            else:
+                score = (new_blue - init_blue) + (init_red - new_red)
+            
+
+            if score > 0:
+                if action is SpawnAction:
+                    from_cell = action.cell
+                    coordinates = (int(from_cell.r), int(from_cell.q))
+                    # checking each of the neighbour cells
+                    # make sure we're not spawning right next to an enemy cell
+                    for dir in DIR.coord:
+                        tmp = (coordinates[0] + dir[0], coordinates[1] + dir[1])
+                        # spawning next to enemy
+                        if (tmp.grid_state[tmp][0] != colour):
+                            bad.append(action)
+                            break
+
+                good.append(action)
+
+            # score won't be <= 0 if it's a spawn action
+            elif score == 0:
+                average.append(action)
+
+            else:
+                bad.append(action)
+
+            del tmp
+
+        # return the best action
+        if len(good) != 0:
+            return random.choice(good)
+        
+        elif len(average) != 0:
+            return random.choice(average)
+        
+        else:
+            return random.choice(bad)
+
+
+
+
+    # heuristic for node selection, returns best action out of all legal actions
+    def heuristic(self, actions):
+        obvious = []
+        good = []
+        average = []
+        bad = []
+        for action in actions:
+            flag = 0 # check if this action is already any of the obvious/good/bad action
+            colour = self.player_turn
+
+            enemy_killed = 0
+            own_killed = 0
+            modified_cells = [] # this list can be later used to check neighbours of modified cells
+
+            # spread action
+            if action is SpreadAction:
+                cell, dir = action.cell, action.direction
+                from_cell = (int(cell.r), int(cell.q))
+                dir = (int(dir.r), int(dir.q))
+                
+                # check each cell that it will spread to
+                for i in range((self.grid_state[from_cell])[1]):
+                    spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
+                    spread_coord = self.fix_tuple(spread_coord)
+                    modified_cells.append(spread_coord)
+
+                    if spread_coord in self.grid_state:
+                        # counts number of enemy eaten/killed and own killed
+                        if colour != self.eval_colour(spread_coord):
+                            enemy_killed += 1
+                            # cell will be empty if killed
+                            if (self.grid_state[spread_coord])[1] == 6:
+                                modified_cells.remove(spread_coord)
+                        else:
+                            if (self.grid_state[spread_coord])[1] == 6:
+                                own_killed += 1
+                                modified_cells.remove(spread_coord)
+
+            # OBVIOUS
+            # killing any enemy cell
+            if enemy_killed > own_killed:
+                obvious.append(action)
+                flag = 0
+                continue
+
+            # BAD
+            # eating yourself
+            # killing more own cells than enemy cells
+            if enemy_killed <= own_killed:
+                bad.append(action)
+                flag = 0
+                continue
+
+            
+            # spawn action
+            #if action is SpawnAction:
+                # BAD
+                # spawn next to opponent cell 
+                # (prioritise this before spawning next to own if neighbour has own and opponent cells)
+
+                # GOOD
+                # spawn in a line/group/next-to-own
+
+
+            # GOOD
+            # spread without eating any enemy node
+            # and number of own colour neighbour cells > enemy neighbour cells
+            
+
+
+            # AVERAGE
+            # spreading without eating any enemy node
+            # and number of own colour neighbour cells > enemy neighbour cells
+            if flag:
+                average.append(action)
+
+        # return the best action
+        if len(obvious) != 0:
+            return random.chois(obvious)
+        
+        elif len(good) != 0:
+            return random.choice(good)
+        
+        elif len(average) != 0:
+            return random.choice(average)
+        
+        else:
+            return random.choice(bad)
+
 
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
     def eval_colour(self, coordinate):
@@ -454,7 +634,7 @@ class BOARD:
         
         if red > blue:
             return 'r'
-        # winner is blue if red >= blue for now
+        # winner is blue if red <= blue for now
         else:
             return 'b'
 
@@ -498,7 +678,6 @@ class MCT:
            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.fully_explored:
-                # print("\n Expansion section entered \n")
                 node = node.expand() # <- find possible moves
            
             # print("\n Expanded node: ")
@@ -514,9 +693,7 @@ class MCT:
             count += 1
 
         action = root.best_final_action()
-        # set root to corresponding child action
-        #self.update_tree(self.root.board.turns % 2, action)
-        
+
 #        root.print_node_data
 #        root.board.print_board_data
         #print("Legal actions are:")
@@ -525,55 +702,6 @@ class MCT:
 
 #        print(render_board(root.board.grid_state, ansi = True)) 
 #        root.board.print_board_data
-
         return action
 
-    # def turn(self, color: PlayerColor, action: Action, **referee: dict):
-    '''
-    Not sure how to do this yet: Get playor colour, assert that this playour turn for our state is same as playour color, 
-    find the corresponding child node with the same action as the input
-    set that as the new root and delete the parent node 
-    hope that python garbage collector will delete the sibling nodes eventually, or manually do it?
-    '''
-    def update_tree(self, action: Action):
 
-        for child in self.root.children:
-            # same action as child, set root as child
-            if child.action == action:
-                del self.root.children
-                self.root = child
-                break
-
-        else:
-            raise ValueError("Action not found in children")
-
-
-
-'''
-Heuristic:
-
-* stop if 
-    * any obvious move is found
-
-
-obvious:
-- killing opponent 
-- usually spread actions
-
-
-good:
-- spawn near yourself
-- spawn in a group/line
-
-average:
-- any move that's not obvious/good/bad
-
-bad:
-- wasting a move
-    - spawning next to opponent
-    - killing urself
-
-
-    
-
-'''

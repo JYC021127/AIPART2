@@ -4,13 +4,13 @@
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
 
-from .search_strategy import * # Note written yet 
+from .search_strategy import *
 
 
 from copy import deepcopy
 
 # Planning to write a function in a different python file and just import it into this afterwards 
-MAX_ITERATIONS = 100
+MAX_ITERATIONS = 50
 
 
 # This is the entry point for your game playing agent. Currently the agent
@@ -24,7 +24,7 @@ class Agent:
         """
         Initialise the agent.
         """
-        self.mct = MCT(NODE(BOARD({}))) # This should be get legal moves instead of 49, not sure how to change this atm
+        self.mct = MCT(NODE(BOARD({})))
         self._color = color
 
         match color:
@@ -41,12 +41,10 @@ class Agent:
             case PlayerColor.RED:
                 print("RED ACTION")
                 return self.mct.mcts(MAX_ITERATIONS)
-                # return SpawnAction(HexPos(3, 3))
+
             case PlayerColor.BLUE:
                 print("BLUE ACTION")
                 return self.mct.mcts(MAX_ITERATIONS)
-                # This is going to be invalid... BLUE never spawned!
-                #return SpreadAction(HexPos(3, 3), HexDir.Up)
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
         """
@@ -62,11 +60,6 @@ class Agent:
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
         self.update(action)
-        #self.mct.root.board.print_board_data
-        # UPDATE:
-            # change root node
-            # if no children
-                # apply action to current board (root node) -> new node
 
 
     def update(self, action: Action):
@@ -74,19 +67,11 @@ class Agent:
         for child in self.mct.root.children:
             # same action as child, set root as child
             if child.action == action:
-                print(child.children)
+                #print(child.children)
                 del self.mct.root.children
                 self.mct.root = child
                 flag = 1
                 break
-
-#        if flag == 0:
-#            previous = self.mct.root
-#            new = previous.board.apply_action(action)
-#            previous.print_node_data
-#            previous.board.print_board_data
-#            self.mct.root = NODE(new, total = len(new.get_legal_actions))
-#            del previous
 
         if flag == 0:
             previous = self.mct.root #previous root 

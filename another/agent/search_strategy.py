@@ -42,6 +42,8 @@ import random
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (maybe, idk)
 
+class DIR:
+    coord = [(0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1), (1, 0)]
 # Class representing Nodes of the Monte Carlo Tree
 class NODE:
     def __init__(self, board, action = None, parent = None, children = None, total = 0, wins = 0, playouts = 0):
@@ -78,7 +80,8 @@ class NODE:
 #        print("Available actions:", actions)
 
 
-        random_action = random.choice(actions)
+        #random_action = random.choice(actions)
+        random_action = self.board.heuristic_1(actions)
         del actions
 
         # Create / Deepcopy original grid and apply the random action
@@ -401,6 +404,68 @@ class BOARD:
         - killing urself (spreading towards own cell with POWER=6)
     '''
 
+    # heuristic 1.0 (just trying a weird idea)
+    def heuristic_1(self, actions):
+        good = []
+        average = []
+        bad = []
+        for action in actions:
+            flag = 0
+            colour = self.player_turn
+            score = 0 # used to rank actions that can eat at least 1 cell
+            # positive score is pretty good
+            # score of 0 is average
+            # negative score is really bad
+            # for spawn actions, as long as it is not spawning right next to an enemy, it is good
+                # currently prioritising spread over spawn actions
+
+            tmp = deepcopy(self)
+            tmp.apply_action(action)
+            init_red = self.num_red
+            new_red = tmp.num_red
+            init_blue = self.num_blue
+            new_blue = tmp.num_blue
+
+            if colour == 'r':
+                score = (new_red - init_red) + (init_blue - new_blue)
+            else:
+                score = (new_blue - init_blue) + (init_red - new_red)
+            
+
+            if score > 0:
+                if action is SpawnAction:
+                    from_cell = action.cell
+                    coordinates = (int(from_cell.r), int(from_cell.q))
+                    # checking each of the neighbour cells
+                    # make sure we're not spawning right next to an enemy cell
+                    for dir in DIR.coord:
+                        tmp = (coordinates[0] + dir[0], coordinates[1] + dir[1])
+                        # spawning next to enemy
+                        if (tmp.grid_state[tmp][0] != colour):
+                            bad.append(action)
+
+                good.append(action)
+
+            # score won't be <= 0 if it's a spawn action
+            elif score == 0:
+                average.append(action)
+
+            else:
+                bad.append(action)
+
+        # return the best action
+        if len(good) != 0:
+            return random.choice(good)
+        
+        elif len(average) != 0:
+            return random.choice(average)
+        
+        else:
+            return random.choice(bad)
+
+
+
+
     # heuristic for node selection, returns best action out of all legal actions
     def heuristic(self, actions):
         obvious = []
@@ -411,15 +476,15 @@ class BOARD:
             flag = 0 # check if this action is already any of the obvious/good/bad action
             colour = self.player_turn
 
+            enemy_killed = 0
+            own_killed = 0
+            modified_cells = []
+
             # spread action
-            if action is SpreadAction():
+            if action is SpreadAction:
                 cell, dir = action.cell, action.direction
                 from_cell = (int(cell.r), int(cell.q))
                 dir = (int(dir.r), int(dir.q))
-
-                enemy_killed = 0
-                own_killed = 0
-                modified_cells = [from_cell] # the spreading cell itself is also modified
                 
                 # check each cell that it will spread to
                 for i in range((self.grid_state[from_cell])[1]):
@@ -427,41 +492,54 @@ class BOARD:
                     spread_coord = self.fix_tuple(spread_coord)
                     modified_cells.append(spread_coord)
 
-                    # counts number of enemy eaten and own eaten
-                    if colour != self.eval_colour(spread_coord):
-                        enemy_killed += 1
-                    else:
-                        own_killed += 1
+                    if spread_coord in self.grid_state:
+                        # counts number of enemy eaten/killed and own killed
+                        if colour != self.eval_colour(spread_coord):
+                            enemy_killed += 1
+                            # cell will be empty if killed
+                            if (self.grid_state[spread_coord])[1] == 6:
+                                modified_cells.remove(spread_coord)
+                        else:
+                            if (self.grid_state[spread_coord])[1] == 6:
+                                own_killed += 1
+                                modified_cells.remove(spread_coord)
 
             # OBVIOUS
             # killing any enemy cell
-            if enemy_killed > 
-
-            # GOOD
-            # spread without eating any enemy node
-            # and number of own colour neighbour cells > enemy neighbour cells
-
+            if enemy_killed > own_killed:
+                obvious.append(action)
+                flag = 0
+                continue
 
             # BAD
-            # spreading without eating any enemy node
-            # and number of own colour neighbour cells > enemy neighbour cells
-
+            # killing more own cells than enemy cells
+            if enemy_killed <= own_killed:
+                bad.append(action)
+                flag = 0
+                continue
 
             # eating yourself
-                    
+
             
             # spawn action
-            if action is SpawnAction():
+            #if action is SpawnAction:
                 # BAD
                 # spawn next to opponent cell 
                 # (prioritise this before spawning next to own if neighbour has own and opponent cells)
-
 
                 # GOOD
                 # spawn in a line/group/next-to-own
 
 
+            # GOOD
+            # spread without eating any enemy node
+            # and number of own colour neighbour cells > enemy neighbour cells
+            
+
+
             # AVERAGE
+            # spreading without eating any enemy node
+            # and number of own colour neighbour cells > enemy neighbour cells
             if flag:
                 average.append(action)
 

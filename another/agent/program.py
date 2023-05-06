@@ -10,7 +10,7 @@ from .search_strategy import * # Note written yet
 from copy import deepcopy
 
 # Planning to write a function in a different python file and just import it into this afterwards 
-MAX_ITERATIONS = 1
+MAX_ITERATIONS = 50
 
 
 # This is the entry point for your game playing agent. Currently the agent
@@ -74,7 +74,7 @@ class Agent:
         for child in self.mct.root.children:
             # same action as child, set root as child
             if child.action == action:
-                print(child.children)
+                #print(child.children)
                 del self.mct.root.children
                 self.mct.root = child
                 flag = 1

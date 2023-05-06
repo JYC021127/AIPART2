@@ -62,8 +62,8 @@ class NODE:
     '''
     def add_child(self, child):
         self.children.append(child)
-   
-
+             
+    
     # Function that generates a new child node of the selected node (the selection policy was random)
     '''
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
@@ -373,6 +373,99 @@ class BOARD:
         del self.grid_state[from_cell]
         
     
+    '''
+    Heuristic:
+    * stop if 
+        * any obvious move is found
+
+    obvious:
+    - killing opponent (done)
+        - usually spread actions
+
+    good:
+    - spawn near yourself
+    - spawn in a group/line
+    - spread near yourself ???? 
+        - what if this also means spreading near opponent)
+        - maybe count the number of opponent cell vs own cell?
+            - if neighbour own cells > opponent cells then it is good
+
+    average:
+    - any move that's not obvious/good/bad
+
+    bad:
+    - wasting a move
+        - spawning next to opponent
+        - spreading towards opponent
+            - if neighbour own cells < opponent cells
+        - killing urself (spreading towards own cell with POWER=6)
+    '''
+
+    # heuristic for node selection, returns best action out of all legal actions
+    def heuristic(self, actions):
+        obvious = []
+        good = []
+        average = []
+        bad = []
+        for action in actions:
+            flag = 0 # check if this action is already any of the obvious/good/bad action
+            colour = self.player_turn
+
+            # spread action
+            if action is SpreadAction():
+                cell, dir = action.cell, action.direction
+                from_cell = (int(cell.r), int(cell.q))
+                dir = (int(dir.r), int(dir.q))
+
+                enemy_killed = 0
+                own_killed = 0
+                modified_cells = [from_cell] # the spreading cell itself is also modified
+                
+                # check each cell that it will spread to
+                for i in range((self.grid_state[from_cell])[1]):
+                    spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
+                    spread_coord = self.fix_tuple(spread_coord)
+                    modified_cells.append(spread_coord)
+
+                    # counts number of enemy eaten and own eaten
+                    if colour != self.eval_colour(spread_coord):
+                        enemy_killed += 1
+                    else:
+                        own_killed += 1
+
+            # OBVIOUS
+            # killing any enemy cell
+            if enemy_killed > 
+
+            # GOOD
+            # spread without eating any enemy node
+            # and number of own colour neighbour cells > enemy neighbour cells
+
+
+            # BAD
+            # spreading without eating any enemy node
+            # and number of own colour neighbour cells > enemy neighbour cells
+
+
+            # eating yourself
+                    
+            
+            # spawn action
+            if action is SpawnAction():
+                # BAD
+                # spawn next to opponent cell 
+                # (prioritise this before spawning next to own if neighbour has own and opponent cells)
+
+
+                # GOOD
+                # spawn in a line/group/next-to-own
+
+
+            # AVERAGE
+            if flag:
+                average.append(action)
+
+
 
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
     def eval_colour(self, coordinate):
@@ -523,8 +616,8 @@ class MCT:
         #print(root.board.get_legal_actions)
         
 
-        print(render_board(root.board.grid_state, ansi = True)) 
-        root.board.print_board_data
+        #print(render_board(root.board.grid_state, ansi = True)) 
+        #root.board.print_board_data
 
         return action
 
@@ -547,33 +640,3 @@ class MCT:
         else:
             raise ValueError("Action not found in children")
 
-
-
-'''
-Heuristic:
-
-* stop if 
-    * any obvious move is found
-
-
-obvious:
-- killing opponent 
-- usually spread actions
-
-
-good:
-- spawn near yourself
-- spawn in a group/line
-
-average:
-- any move that's not obvious/good/bad
-
-bad:
-- wasting a move
-    - spawning next to opponent
-    - killing urself
-
-
-    
-
-'''

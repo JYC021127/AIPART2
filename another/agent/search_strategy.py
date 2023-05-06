@@ -91,13 +91,13 @@ class NODE:
 
         # Create a deep copy of the node we can modify, otherwise we end up deleting the node in our tree
         node = deepcopy(self)
-
-        while not node.board.game_over: 
+        count = 0
+        while not node.board.game_over and count < SIMULATIONS: 
             tmp = node        # don't think we need tmp? since we are deleting node anyway after winner is found
             node = node.expand() # Generates a new child node randomly (with a random action)
-            print("While loop run once already")
+            #print("While loop run once already")
             del tmp # Not actually sure if this works, but we are short on memory
-
+            count += 1
         winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
         del node
 
@@ -280,11 +280,11 @@ class BOARD:
         cell, dir = action.cell, action.direction
         
         from_cell = (int(cell.r), int(cell.q))
-        print(f"from cell is {from_cell}")    
-        print(f"direction is {dir}")
+        # print(f"from cell is {from_cell}")    
+        # print(f"direction is {dir}")
         dir = (int(dir.r), int(dir.q))
-        print(f"direction after is {dir}")
-        self.print_board_data
+        # print(f"direction after is {dir}")
+        #self.print_board_data
 
         if (self.grid_state[from_cell])[0] != colour:
             raise ValueError("Spread origin node doesn't belong to the current colour")
@@ -456,8 +456,7 @@ class MCT:
         count = 0
         root = self.root
 
-        print("\n Root is: ")
-        root.print_node_data
+        # print("\n Root is: ")
         #root.board.print_board_data
 
         while count < max_iterations: # Can include memory and time constraint in the while loop as well 
@@ -467,18 +466,18 @@ class MCT:
             while not node.board.game_over and node.fully_explored:
                 node = node.largest_ucb()
             
-            print("\n largest UCB node:")
-            node.print_node_data
-            node.board.print_board_data
+            # print("\n largest UCB node:")
+            # node.print_node_data
+            # node.board.print_board_data
            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.fully_explored:
-                print("\n Expansion section entered \n")
+                # print("\n Expansion section entered \n")
                 node = node.expand() # <- find possible moves
            
-            print("\n Expanded node: ")
-            node.print_node_data
-            node.board.print_board_data
+            # print("\n Expanded node: ")
+            # node.print_node_data
+            # node.board.print_board_data
 
             # Simulation: Simulate newly expanded node or save winner of  the terminal state
             winner = node.simulate()

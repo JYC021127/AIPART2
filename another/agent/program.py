@@ -59,7 +59,7 @@ class Agent:
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
         self.update(action)
-        self.mct.root.board.print_board_data
+        #self.mct.root.board.print_board_data
         # UPDATE:
             # change root node
             # if no children
@@ -79,8 +79,6 @@ class Agent:
 
         if flag == 0:
             previous = self.mct.root
-            new = previous.board.apply_action(action)
-            previous.print_node_data
-            previous.board.print_board_data
-            self.mct.root = NODE(new, total = len(new.get_legal_actions))
+            previous.board.apply_action(action)
+            self.mct.root = NODE(previous.board, total = len(previous.board.get_legal_actions))
             del previous

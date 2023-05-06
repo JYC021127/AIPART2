@@ -278,22 +278,21 @@ class BOARD:
         colour = self.player_turn
         cell, dir = action.cell, action.direction
         
-        print(f"cell.r is {cell.r}")
-        from_cell = (cell.r, cell.q)
+        from_cell = (int(cell.r), int(cell.q))
         print(f"from cell is {from_cell}")    
+
+        self.print_board_data
 
         if (self.grid_state[from_cell])[0] != colour:
             raise ValueError("Spread origin node doesn't belong to the current colour")
         
-        # Delete cell where spreading originates and update board fields (number of nodes of the colour is reduced by 1)
-        del self.grid_state[from_cell]
         if colour == 'R':
             self.num_red -= 1
         else:
             self.num_blue -= 1
 
         # Update the board_grid grid_state
-        for i in range(self.grid_state[from_cell][1]):
+        for i in range((self.grid_state[from_cell])[1]):
             # Location of coordinate spread position: make sure coordinate in torus structure 
             spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
             spread_coord = self.fix_tuple(spread_coord)
@@ -332,7 +331,9 @@ class BOARD:
                     self.num_red += 1
                 else:
                     self.num_blue += 1
-
+    
+        # Delete cell where spreading originates and update board fields (number of nodes of the colour is reduced by 1)
+        del self.grid_state[from_cell]
 
     
 

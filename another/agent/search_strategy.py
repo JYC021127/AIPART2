@@ -40,7 +40,7 @@ from copy import deepcopy
 import random
 
 MAX_POWER = 49  # Max total power of a game
-MAX_TURNS = 343 # Max total turns in a game
+MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (maybe, idk)
 
 # Class representing Nodes of the Monte Carlo Tree
 class NODE:
@@ -114,6 +114,10 @@ class NODE:
         while not node.board.game_over:
             actions = node.board.get_legal_actions
 
+            # Testing 
+#            node.board.print_board_data
+#            print(render_board(node.board.grid_state, ansi = True)) 
+            
             if len(actions) == 0:
                 print("actions are:")
                 print(actions)
@@ -122,6 +126,8 @@ class NODE:
                 print(render_board(node.board.grid_state, ansi = True)) 
 
             random_action = random.choice(actions)
+            
+#            print(f"random action is {random_action}")
 
 #            print(len(actions))
 #            print(node.board.grid_state)
@@ -338,8 +344,6 @@ class BOARD:
 
                 # Otherwise, spread action: original colour changes and original power += 1 
                 else:
-                    self.grid_state[spread_coord] = (colour, self.grid_state[spread_coord][1] + 1)
-
                     # Enemy node was eaten while spreading (total power doesn't change)
                     if colour != self.eval_colour(spread_coord):
                         if colour == 'R':
@@ -349,6 +353,9 @@ class BOARD:
                             self.num_red -= 1
                             self.num_blue += 1
                     # Friend node eaten means that original spread position num_node -= 1
+
+                    # Update num_blue and red before updating dictionary
+                    self.grid_state[spread_coord] = (colour, self.grid_state[spread_coord][1] + 1)
 
             # Otherwise, coordinate to spread no currently occupied, so spawn a new node (total power doesn't change)
             else:
@@ -514,6 +521,11 @@ class MCT:
 #        root.board.print_board_data
         #print("Legal actions are:")
         #print(root.board.get_legal_actions)
+        
+
+        print(render_board(root.board.grid_state, ansi = True)) 
+        root.board.print_board_data
+
         return action
 
     # def turn(self, color: PlayerColor, action: Action, **referee: dict):

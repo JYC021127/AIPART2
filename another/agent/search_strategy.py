@@ -38,7 +38,6 @@ import random
 
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game
-SIMULATIONS = 500
 
 # Class representing Nodes of the Monte Carlo Tree
 class NODE:
@@ -98,13 +97,22 @@ class NODE:
 
         # Create a deep copy of the node we can modify, otherwise we end up deleting the node in our tree
         node = deepcopy(self)
-        while not node.board.game_over: 
-            # shouldn't create new node here ############################
-            # modify the node directly
-            tmp = node        
-            node = tmp.expand() # Generates a new child node randomly (with a random action)
+#        while not node.board.game_over: 
+#            # shouldn't create new node here ############################
+#            # modify the node directly
+#            tmp = node        
+#            node = tmp.expand() # Generates a new child node randomly (with a random action)
+#            del tmp
 
-            del tmp 
+        node.parent = None
+        node.children = None
+        node.action = None
+        node.total = 0
+        while not node.board.game_over:
+            actions = node.board.get_legal_actions
+            random_action = random.choice(actions)
+            del actions
+            node.board.apply_action(random_action)
         winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
         del node
 

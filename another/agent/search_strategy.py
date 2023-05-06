@@ -103,12 +103,6 @@ class NODE:
 
         # Create a deep copy of the node we can modify, otherwise we end up deleting the node in our tree
         node = deepcopy(self)
-#        while not node.board.game_over: 
-#            # shouldn't create new node here ############################
-#            # modify the node directly
-#            tmp = node        
-#            node = tmp.expand() # Generates a new child node randomly (with a random action)
-#            del tmp
 
         node.parent = None
         node.children = None
@@ -141,6 +135,7 @@ class NODE:
         del node
 
         return winner
+
 
     # Function that backpropogates the result (either 'r' or 'b' has won), updating the wins and the playouts
     '''
@@ -404,13 +399,12 @@ class BOARD:
         - killing urself (spreading towards own cell with POWER=6)
     '''
 
-    # heuristic 1.0 (just trying a weird idea)
+    # heuristic 1.0 (just trying a weird idea, currently only used in expand())
     def heuristic_1(self, actions):
         good = []
         average = []
         bad = []
         for action in actions:
-            flag = 0
             colour = self.player_turn
             score = 0 # used to rank actions that can eat at least 1 cell
             # positive score is pretty good
@@ -426,6 +420,7 @@ class BOARD:
             init_blue = self.num_blue
             new_blue = tmp.num_blue
 
+            # the idea of how score is calculated is here...
             if colour == 'r':
                 score = (new_red - init_red) + (init_blue - new_blue)
             else:
@@ -443,6 +438,7 @@ class BOARD:
                         # spawning next to enemy
                         if (tmp.grid_state[tmp][0] != colour):
                             bad.append(action)
+                            break
 
                 good.append(action)
 
@@ -452,6 +448,8 @@ class BOARD:
 
             else:
                 bad.append(action)
+
+            del tmp
 
         # return the best action
         if len(good) != 0:
@@ -478,7 +476,7 @@ class BOARD:
 
             enemy_killed = 0
             own_killed = 0
-            modified_cells = []
+            modified_cells = [] # this list can be later used to check neighbours of modified cells
 
             # spread action
             if action is SpreadAction:
@@ -512,13 +510,12 @@ class BOARD:
                 continue
 
             # BAD
+            # eating yourself
             # killing more own cells than enemy cells
             if enemy_killed <= own_killed:
                 bad.append(action)
                 flag = 0
                 continue
-
-            # eating yourself
 
             
             # spawn action
@@ -543,6 +540,18 @@ class BOARD:
             if flag:
                 average.append(action)
 
+        # return the best action
+        if len(obvious) != 0:
+            return random.chois(obvious)
+        
+        elif len(good) != 0:
+            return random.choice(good)
+        
+        elif len(average) != 0:
+            return random.choice(average)
+        
+        else:
+            return random.choice(bad)
 
 
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
@@ -625,7 +634,7 @@ class BOARD:
         
         if red > blue:
             return 'r'
-        # winner is blue if red >= blue for now
+        # winner is blue if red <= blue for now
         else:
             return 'b'
 
@@ -669,7 +678,6 @@ class MCT:
            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.fully_explored:
-                # print("\n Expansion section entered \n")
                 node = node.expand() # <- find possible moves
            
             # print("\n Expanded node: ")
@@ -685,9 +693,7 @@ class MCT:
             count += 1
 
         action = root.best_final_action()
-        # set root to corresponding child action
-        #self.update_tree(self.root.board.turns % 2, action)
-        
+
 #        root.print_node_data
 #        root.board.print_board_data
         #print("Legal actions are:")
@@ -699,22 +705,4 @@ class MCT:
 
         return action
 
-    # def turn(self, color: PlayerColor, action: Action, **referee: dict):
-    '''
-    Not sure how to do this yet: Get playor colour, assert that this playour turn for our state is same as playour color, 
-    find the corresponding child node with the same action as the input
-    set that as the new root and delete the parent node 
-    hope that python garbage collector will delete the sibling nodes eventually, or manually do it?
-    '''
-    def update_tree(self, action: Action):
-
-        for child in self.root.children:
-            # same action as child, set root as child
-            if child.action == action:
-                del self.root.children
-                self.root = child
-                break
-
-        else:
-            raise ValueError("Action not found in children")
 

@@ -50,6 +50,7 @@ class NODE:
         self.total = total # total number of possible moves 
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
+
          
 
 
@@ -447,6 +448,7 @@ class BOARD:
 class MCT:
     def __init__(self, root: NODE):
         self.root = root
+        self.root.total = len(self.root.board.get_legal_actions)
 
 
     # perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backpropogate
@@ -456,7 +458,7 @@ class MCT:
 
         print("\n Root is: ")
         root.print_node_data
-        root.board.print_board_data
+        #root.board.print_board_data
 
         while count < max_iterations: # Can include memory and time constraint in the while loop as well 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored

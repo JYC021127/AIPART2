@@ -75,6 +75,7 @@ class NODE:
 #        self.board.print_board_data
 #        print("Available actions:", actions)
 
+
         random_action = random.choice(actions)
         del actions
 
@@ -84,7 +85,7 @@ class NODE:
 
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
         child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
-        self.children.append(child)
+        self.add_child(child)
         return child
 
     
@@ -97,13 +98,13 @@ class NODE:
 
         # Create a deep copy of the node we can modify, otherwise we end up deleting the node in our tree
         node = deepcopy(self)
-        count = 0
-        while not node.board.game_over and count < SIMULATIONS: 
-            tmp = node        # don't think we need tmp? since we are deleting node anyway after winner is found
-            node = node.expand() # Generates a new child node randomly (with a random action)
-            #print("While loop run once already")
-            del tmp # Not actually sure if this works, but we are short on memory
-            count += 1
+        while not node.board.game_over: 
+            # shouldn't create new node here ############################
+            # modify the node directly
+            tmp = node        
+            node = tmp.expand() # Generates a new child node randomly (with a random action)
+
+            del tmp 
         winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
         del node
 
@@ -230,7 +231,6 @@ class BOARD:
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Down))
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownLeft))
                         legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpLeft))
-
         return legal_actions
         
 
@@ -501,8 +501,8 @@ class MCT:
         
         root.print_node_data
         root.board.print_board_data
-        print("Legal actions are:")
-        print(root.board.get_legal_actions)
+        #print("Legal actions are:")
+        #print(root.board.get_legal_actions)
         return action
 
     # def turn(self, color: PlayerColor, action: Action, **referee: dict):
@@ -525,3 +525,32 @@ class MCT:
             raise ValueError("Action not found in children")
 
 
+
+'''
+Heuristic:
+
+* stop if 
+    * any obvious move is found
+
+
+obvious:
+- killing opponent 
+- usually spread actions
+
+
+good:
+- spawn near yourself
+- spawn in a group/line
+
+average:
+- any move that's not obvious/good/bad
+
+bad:
+- wasting a move
+    - spawning next to opponent
+    - killing urself
+
+
+    
+
+'''

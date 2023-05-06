@@ -32,6 +32,9 @@ To do:
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir, Board
 
+
+from .utils import render_board
+
 from math import *
 from copy import deepcopy
 import random
@@ -110,7 +113,19 @@ class NODE:
         node.total = 0
         while not node.board.game_over:
             actions = node.board.get_legal_actions
+
+            if len(actions) == 0:
+                print("actions are:")
+                print(actions)
+                print("board info is ")
+                node.board.print_board_data
+                print(render_board(node.board.grid_state, ansi = True)) 
+
             random_action = random.choice(actions)
+
+#            print(len(actions))
+#            print(node.board.grid_state)
+
             del actions
             node.board.apply_action(random_action)
         winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
@@ -271,7 +286,7 @@ class BOARD:
         from_cell = action.cell
         
         # Update dictionary with new spawn action
-        coordinates = (from_cell.r, from_cell.q)
+        coordinates = (int(from_cell.r), int(from_cell.q))
         self.grid_state[coordinates] = (colour, 1)
 
         # Update grid_state / board fields
@@ -293,24 +308,17 @@ class BOARD:
         # Setup: current colour turn, get hex position (internet seems to say we can use hexpos without modifying) and direction
         colour = self.player_turn
         cell, dir = action.cell, action.direction
-        
         from_cell = (int(cell.r), int(cell.q))
-        # print(f"from cell is {from_cell}")    
-        # print(f"direction is {dir}")
         dir = (int(dir.r), int(dir.q))
-        # print(f"direction after is {dir}")
-        #self.print_board_data
 
+        # Spread origin belings to turn colour
         if (self.grid_state[from_cell])[0] != colour:
             raise ValueError("Spread origin node doesn't belong to the current colour")
         
-        if colour == 'R':
-            self.num_red -= 1
-        else:
-            self.num_blue -= 1
 
         # Update the board_grid grid_state
         for i in range((self.grid_state[from_cell])[1]):
+
             # Location of coordinate spread position: make sure coordinate in torus structure 
             spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
             spread_coord = self.fix_tuple(spread_coord)
@@ -340,7 +348,7 @@ class BOARD:
                         else:
                             self.num_red -= 1
                             self.num_blue += 1
-                        
+                    # Friend node eaten means that original spread position num_node -= 1
 
             # Otherwise, coordinate to spread no currently occupied, so spawn a new node (total power doesn't change)
             else:
@@ -351,8 +359,12 @@ class BOARD:
                     self.num_blue += 1
     
         # Delete cell where spreading originates and update board fields (number of nodes of the colour is reduced by 1)
+        if colour == 'R':
+            self.num_red -= 1
+        else:
+            self.num_blue -= 1
         del self.grid_state[from_cell]
-
+        
     
 
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
@@ -440,15 +452,6 @@ class BOARD:
             return 'B'
 
 
-    # initialize board
-    def initialize(self):
-        for info in self.grid_state.values():
-            if info[0] == 'r':
-                num_red += 1
-            else:
-                num_blue += 1
-            total_power += info[1]
-
     # Function used for debugging purposes: prints the fields / attributes of the BOARD CLASS
     @property
     def print_board_data(self):
@@ -507,8 +510,8 @@ class MCT:
         # set root to corresponding child action
         #self.update_tree(self.root.board.turns % 2, action)
         
-        root.print_node_data
-        root.board.print_board_data
+#        root.print_node_data
+#        root.board.print_board_data
         #print("Legal actions are:")
         #print(root.board.get_legal_actions)
         return action

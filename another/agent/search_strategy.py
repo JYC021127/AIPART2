@@ -40,7 +40,7 @@ from copy import deepcopy
 import random
 
 MAX_POWER = 49  # Max total power of a game
-MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (maybe, idk)
+MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 
 # Class representing Nodes of the Monte Carlo Tree
 class NODE:
@@ -118,12 +118,12 @@ class NODE:
 #            node.board.print_board_data
 #            print(render_board(node.board.grid_state, ansi = True)) 
             
-            if len(actions) == 0:
-                print("actions are:")
-                print(actions)
-                print("board info is ")
-                node.board.print_board_data
-                print(render_board(node.board.grid_state, ansi = True)) 
+#            if len(actions) == 0:
+#                print("actions are:")
+#                print(actions)
+#                print("board info is ")
+#                node.board.print_board_data
+#                print(render_board(node.board.grid_state, ansi = True)) 
 
             random_action = random.choice(actions)
             
@@ -523,8 +523,8 @@ class MCT:
         #print(root.board.get_legal_actions)
         
 
-        print(render_board(root.board.grid_state, ansi = True)) 
-        root.board.print_board_data
+#        print(render_board(root.board.grid_state, ansi = True)) 
+#        root.board.print_board_data
 
         return action
 

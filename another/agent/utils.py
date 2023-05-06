@@ -16,9 +16,9 @@ def apply_ansi(str, bold=True, color=None):
     """
     bold_code = "\033[1m" if bold else ""
     color_code = ""
-    if color == "R":
+    if color == "r":
         color_code = "\033[31m"
-    if color == "B":
+    if color == "b":
         color_code = "\033[34m"
     return f"{bold_code}{color_code}{str}\033[0m"
 

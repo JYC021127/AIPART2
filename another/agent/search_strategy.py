@@ -463,7 +463,8 @@ class BOARD:
             return random.choice(average)
         
         else:
-            return random.choice(bad)
+            if len(bad) != 0:
+                return random.choice(bad)
 
 
 

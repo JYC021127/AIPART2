@@ -419,6 +419,8 @@ class BOARD:
             new_red = tmp.num_red
             init_blue = self.num_blue
             new_blue = tmp.num_blue
+            
+            flag = 0
 
             # the idea of how score is calculated is here...
             if colour == 'r':
@@ -436,10 +438,14 @@ class BOARD:
                     for dir in DIR.coord:
                         tmp = (coordinates[0] + dir[0], coordinates[1] + dir[1])
                         # spawning next to enemy
-                        if (tmp.grid_state[tmp][0] != colour):
+                        if (tmp.grid_state[tmp])[0] != colour:
                             bad.append(action)
+                            flag = 1
                             break
-                good.append(action)
+                        elif (tmp.grid_state[tmp])[0] == colour:
+                            average.append(action)
+                if flag:
+                    good.append(action)
 
             # score won't be <= 0 if it's a spawn action
             elif score == 0:

@@ -10,7 +10,7 @@ from .search_strategy import *
 from copy import deepcopy
 
 # Planning to write a function in a different python file and just import it into this afterwards 
-MAX_ITERATIONS = 150
+MAX_ITERATIONS = 100
 
 
 # This is the entry point for your game playing agent. Currently the agent
@@ -59,21 +59,37 @@ class Agent:
             case SpreadAction(cell, direction):
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
+        # print("number of children:")
+        # print(len(self.mct.root.children))
+        # self.mct.root.print_node_data
+        # print("root before: ")
+        # tmp = self.mct.root
+        # print(tmp)
         self.update(action)
+        # print("root after: ")
+        # print(self.mct.root)
+    
 
 
     def update(self, action: Action):
         flag = 0
         for child in self.mct.root.children:
+            #child.print_node_data
             # same action as child, set root as child
             if child.action == action:
+                # print(child.action == action)
                 #print(child.children)
+                
                 del self.mct.root.children
                 self.mct.root = child
+
+                # print("root.children:")
+                # print(self.mct.root.children)
                 flag = 1
                 break
 
         if flag == 0:
+            # print("Action not found in child node")
             previous = self.mct.root #previous root 
 #            print("previous board is:")
 #            previous.board.print_board_data

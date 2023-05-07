@@ -109,6 +109,9 @@ class NODE:
         node.children = None
         node.action = None
         node.total = 0
+        ###################################
+        # add a condition for while loop:
+            # stop if one of the colour is obviously winning at one state?
         while not node.board.game_over:
             actions = node.board.get_legal_actions
 
@@ -123,7 +126,8 @@ class NODE:
 #                node.board.print_board_data
 #                print(render_board(node.board.grid_state, ansi = True)) 
 
-            random_action = random.choice(actions)
+            #random_action = random.choice(actions)
+            random_action = self.board.heuristic(actions)
             
 #            print(f"random action is {random_action}")
 
@@ -174,7 +178,7 @@ class NODE:
             return float('inf')
         else:
             value = self.wins/self.playouts
-            return value + c * sqrt(log(self.parent.playouts)/self.playouts)
+            return value + c * sqrt(log(self.parent.playouts)/self.playouts) + self.board.board_score()/(self.playouts * 5)
     
 
 
@@ -372,6 +376,24 @@ class BOARD:
         del self.grid_state[from_cell]
         
     
+    # calculate the score of a board state depending on number of moves to end the game
+    def board_score(self):
+        colour = self.player_turn
+        num_blue = self.num_blue
+        num_red = self.num_red
+        score = 0
+
+        if colour == 'r':
+            score = num_red - num_blue
+        else:
+            score = num_blue - num_red
+        
+        return score
+
+        
+
+
+
     '''
     Heuristic:
     * stop if 
@@ -402,6 +424,7 @@ class BOARD:
 
     # heuristic 1.0 (just trying a weird idea, currently only used in expand())
     def heuristic_1(self, actions):
+        obvious = []
         good = []
         average = []
         bad = []
@@ -449,6 +472,7 @@ class BOARD:
                                 bad.append(action)
                                 flag = 0
                                 break
+                            # spawning next to urself
                             elif (tmp.grid_state[tmp_coord])[0] == colour:
                                 good.append(action)
                                 flag = 0
@@ -468,7 +492,7 @@ class BOARD:
                             bad.append(action)
                             flag = 0
                     if flag:
-                        good.append(action)
+                        obvious.append(action)
 
             # score won't be <= 0 if it's a spawn action
             elif score == 0:
@@ -479,7 +503,10 @@ class BOARD:
             del tmp
 
         # return the best action
-        if len(good) != 0:
+        if len(obvious) != 0:
+            return random.choice(obvious)
+        
+        elif len(good) != 0:
             return random.choice(good)
         
         elif len(average) != 0:
@@ -697,7 +724,7 @@ class MCT:
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
             
-            while not node.board.game_over and node.fully_explored:
+            while not node.board.game_over and node.fully_explored: #len(node.children) <= node.total / 2:
                 node = node.largest_ucb()
             
             # print("\n largest UCB node:")
@@ -720,6 +747,7 @@ class MCT:
 
             count += 1
 
+        root.print_node_data
         action = root.best_final_action()
 
 #        root.print_node_data

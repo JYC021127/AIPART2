@@ -10,7 +10,7 @@ from .search_strategy import *
 from copy import deepcopy
 
 # Planning to write a function in a different python file and just import it into this afterwards 
-MAX_ITERATIONS = 100
+MAX_ITERATIONS = 150
 
 
 # This is the entry point for your game playing agent. Currently the agent

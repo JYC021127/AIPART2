@@ -431,22 +431,23 @@ class BOARD:
             
 
             if score > 0:
-                if action is SpawnAction:
+                if isinstance(action, SpreadAction):
                     from_cell = action.cell
                     coordinates = (int(from_cell.r), int(from_cell.q))
                     # checking each of the neighbour cells
                     # make sure we're not spawning right next to an enemy cell
                     for dir in DIR.coord:
-                        tmp = (coordinates[0] + dir[0], coordinates[1] + dir[1])
-                        # spawning next to enemy
-                        if (tmp.grid_state[tmp])[0] != colour:
-                            bad.append(action)
-                            flag = 0
-                            break
-                        elif (tmp.grid_state[tmp])[0] == colour:
-                            average.append(action)
-                            flag = 0
-                            break
+                        tmp_coord = (coordinates[0] + dir[0], coordinates[1] + dir[1])
+                        if tmp_coord in tmp.grid_state:
+                            # spawning next to enemy
+                            if (tmp.grid_state[tmp_coord])[0] != colour:
+                                bad.append(action)
+                                flag = 0
+                                break
+                            elif (tmp.grid_state[tmp_coord])[0] == colour:
+                                good.append(action)
+                                flag = 0
+                                break
                 if flag:
                     if colour == 'r':
                         if new_blue - init_blue == 0:

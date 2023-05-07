@@ -428,13 +428,6 @@ class BOARD:
             
 
             if score > 0:
-                good.append(action)
-
-            # score won't be <= 0 if it's a spawn action
-            elif score == 0:
-                average.append(action)
-
-            else:
                 if action is SpawnAction:
                     from_cell = action.cell
                     coordinates = (int(from_cell.r), int(from_cell.q))
@@ -446,7 +439,13 @@ class BOARD:
                         if (tmp.grid_state[tmp][0] != colour):
                             bad.append(action)
                             break
-                        
+                good.append(action)
+
+            # score won't be <= 0 if it's a spawn action
+            elif score == 0:
+                average.append(action)
+
+            else:       
                 bad.append(action)
             del tmp
 

@@ -448,6 +448,12 @@ class BOARD:
                             flag = 0
                             break
                 if flag:
+                    if colour == 'r':
+                        if new_blue - init_blue == 0:
+                            bad.append(action)
+                    else:
+                        if new_red - init_red == 0:
+                            bad.append(action)
                     good.append(action)
 
             # score won't be <= 0 if it's a spawn action
@@ -460,17 +466,13 @@ class BOARD:
 
         # return the best action
         if len(good) != 0:
-
             return random.choice(good)
         
         elif len(average) != 0:
-
             return random.choice(average)
         
         else:
-
             if len(bad) != 0:
-
                 return random.choice(bad)
 
 

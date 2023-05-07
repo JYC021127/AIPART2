@@ -82,6 +82,7 @@ class NODE:
 
         #random_action = random.choice(actions)
         random_action = self.board.heuristic_1(actions)
+
         del actions
 
         # Create / Deepcopy original grid and apply the random action
@@ -420,7 +421,7 @@ class BOARD:
             init_blue = self.num_blue
             new_blue = tmp.num_blue
             
-            flag = 0
+            flag = 1
 
             # the idea of how score is calculated is here...
             if colour == 'r':
@@ -440,10 +441,12 @@ class BOARD:
                         # spawning next to enemy
                         if (tmp.grid_state[tmp])[0] != colour:
                             bad.append(action)
-                            flag = 1
+                            flag = 0
                             break
                         elif (tmp.grid_state[tmp])[0] == colour:
                             average.append(action)
+                            flag = 0
+                            break
                 if flag:
                     good.append(action)
 
@@ -457,13 +460,17 @@ class BOARD:
 
         # return the best action
         if len(good) != 0:
+
             return random.choice(good)
         
         elif len(average) != 0:
+
             return random.choice(average)
         
         else:
+
             if len(bad) != 0:
+
                 return random.choice(bad)
 
 

@@ -414,6 +414,11 @@ class BOARD:
             # for spawn actions, as long as it is not spawning right next to an enemy, it is good
                 # currently prioritising spread over spawn actions
 
+            ##################
+            # try not to deepcopy here
+            # write a undo action function that stores the old dictionary
+            ################
+
             tmp = deepcopy(self)
             tmp.apply_action(action)
             init_red = self.num_red
@@ -431,7 +436,7 @@ class BOARD:
             
 
             if score > 0:
-                if isinstance(action, SpreadAction):
+                if isinstance(action, SpawnAction):
                     from_cell = action.cell
                     coordinates = (int(from_cell.r), int(from_cell.q))
                     # checking each of the neighbour cells
@@ -448,14 +453,22 @@ class BOARD:
                                 good.append(action)
                                 flag = 0
                                 break
-                if flag:
+                    # spawning in an empty surrounding
+                    if flag:
+                        average.append(action)
+
+                elif isinstance(action, SpreadAction):
+                    flag = 1
                     if colour == 'r':
                         if new_blue - init_blue == 0:
                             bad.append(action)
+                            flag = 0
                     else:
                         if new_red - init_red == 0:
                             bad.append(action)
-                    good.append(action)
+                            flag = 0
+                    if flag:
+                        good.append(action)
 
             # score won't be <= 0 if it's a spawn action
             elif score == 0:

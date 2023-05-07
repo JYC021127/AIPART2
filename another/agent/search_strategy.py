@@ -50,7 +50,7 @@ class NODE:
         self.board = board # Current grid_state, may need to change the data structure to cater for HexPos since we are using teachers actions code 
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
-        self.children = children if children is not None else [] # List of children nodes, defined as empty list if children is None, not sure whether this works yet. 
+        self.children = children if children is not None else [] # Children is children if not, otherwise it is empty list 
         self.total = total # total number of possible moves 
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
@@ -95,14 +95,26 @@ class NODE:
 
         # Create / Deepcopy original grid and apply the random action
         board = deepcopy(self.board)
-        print(render_board(board.grid_state, ansi = True))
-
+#        print(render_board(board.grid_state, ansi = True))
+#
         board.apply_action(random_action)
-        print(render_board(board.grid_state, ansi = True))
+#        print(render_board(board.grid_state, ansi = True))
 
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
         child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
+
+        # Feel like child is initialized and added correctly 
+#        print("Make sure that the new child is initialized correctly:")
+#        child.print_node_data
+#
+#        print("node before adding child")
+#        self.print_node_data
+
+        
         self.add_child(child)
+        
+#        print("node after adding child")
+#        self.print_node_data
         return child
 
     
@@ -246,6 +258,7 @@ class NODE:
         count = 1
         for child in self.children:
             print(f"child {count} node data:")
+            print(render_board(child.board.grid_state, ansi = True))
             child.print_node_data
             count += 1
 
@@ -783,12 +796,11 @@ class MCT:
         while count < max_iterations: # Can include memory and time constraint in the while loop as well 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
-            #random = 0
+            random = 1
             while not node.board.game_over and node.fully_explored:
-               #random += 1
-               #print(random)
-               tmp = node.largest_ucb()
-               node = tmp
+                print(f"tree traversed {random} times")
+                random += 1
+                node = node.largest_ucb()
             
             # print("\n largest UCB node:")
             # node.print_node_data
@@ -822,7 +834,7 @@ class MCT:
 #        print(render_board(root.board.grid_state, ansi = True)) 
         #root.board.print_board_data
         #root.print_node_data
-        root.print_child_node_data
+        root.children[0].print_child_node_data
         print(f"number of children is {len(root.children)}")
         return action
 

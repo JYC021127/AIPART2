@@ -72,7 +72,15 @@ class NODE:
     '''
     def expand(self):
         # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
+        
+        ###########
+        # try sorting actions according to heuristic directly from the grid_State
+        ######
         actions = self.board.get_legal_actions
+        # print(actions)
+        # act = list(set(actions))
+        # print(act)
+        # print(f"there are {len(actions)} actions and {len(act)} sets")
 
 #        # Testing:
 #        print("Board State")
@@ -87,7 +95,10 @@ class NODE:
 
         # Create / Deepcopy original grid and apply the random action
         board = deepcopy(self.board)
+        print(render_board(board.grid_state, ansi = True))
+
         board.apply_action(random_action)
+        print(render_board(board.grid_state, ansi = True))
 
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
         child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
@@ -167,7 +178,18 @@ class NODE:
     def fully_explored(self):
         return self.playouts >= self.total
 
-    
+    # Function that checks whether a node is explored "enough"
+    @property 
+    def explored_enough(self):        
+        if len(self.children) >= (self.total / 3) and len(self.children) >= 20:
+            return True
+        if self.fully_explored:
+            return True
+        return False
+
+
+
+
     # calculate UCB1 score
     '''
     O(1)
@@ -178,7 +200,7 @@ class NODE:
             return float('inf')
         else:
             value = self.wins/self.playouts
-            return value + c * sqrt(log(self.parent.playouts)/self.playouts) + self.board.board_score()/(self.playouts * 5)
+            return value + c * sqrt(log(self.parent.playouts)/self.playouts)# + self.board.board_score()/(self.playouts * 5)
     
 
 
@@ -219,6 +241,13 @@ class NODE:
         print(f"The number of wins of the node is {self.wins}")
         print(f"The number of playouts of the node is {self.playouts}")
 
+    @property
+    def print_child_node_data(self):
+        count = 1
+        for child in self.children:
+            print(f"child {count} node data:")
+            child.print_node_data
+            count += 1
 
 # Class representing information relating to the grid
 class BOARD:
@@ -422,6 +451,21 @@ class BOARD:
         - killing urself (spreading towards own cell with POWER=6)
     '''
 
+
+    # function that returns if there's any enemy nodes around given coord
+    def check_enemy(self, coord: tuple):
+        colour = self.player_turn
+        # check each direction
+        for dir in DIR.coord:
+            tmp_coord = (coord[0] + dir[0], coord[1] + dir[1])
+            if tmp_coord in self.grid_state:
+                # if neighbour is an enemy
+                if (self.grid_state[tmp_coord])[0] != colour:
+                    return True
+        return False
+
+
+
     # heuristic 1.0 (just trying a weird idea, currently only used in expand())
     def heuristic_1(self, actions):
         obvious = []
@@ -448,7 +492,7 @@ class BOARD:
             new_red = tmp.num_red
             init_blue = self.num_blue
             new_blue = tmp.num_blue
-            
+
             flag = 1
 
             # the idea of how score is calculated is here...
@@ -472,16 +516,20 @@ class BOARD:
                                 bad.append(action)
                                 flag = 0
                                 break
-                            # spawning next to urself
-                            elif (tmp.grid_state[tmp_coord])[0] == colour:
+                            # spawning next to own
+                            else:
                                 good.append(action)
                                 flag = 0
                                 break
+
                     # spawning in an empty surrounding
                     if flag:
                         average.append(action)
 
                 elif isinstance(action, SpreadAction):
+                    cell, dir = action.cell, action.direction
+                    from_cell = (int(cell.r), int(cell.q))
+                    dir = (int(dir.r), int(dir.q))
                     flag = 1
                     if colour == 'r':
                         if new_blue - init_blue == 0:
@@ -491,8 +539,20 @@ class BOARD:
                         if new_red - init_red == 0:
                             bad.append(action)
                             flag = 0
+                    # a spread action that kills enemy node
                     if flag:
-                        obvious.append(action)
+                        check = 0
+                        for i in range((self.grid_state[from_cell])[1]):
+                            # Location of coordinate spread position: make sure coordinate in torus structure 
+                            spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
+                            spread_coord = self.fix_tuple(spread_coord)
+                            # if it spreads near enemy cells
+                            if tmp.check_enemy(spread_coord):
+                                check = 1
+                                good.append(action)
+                                break
+                        if not check:
+                            obvious.append(action)
 
             # score won't be <= 0 if it's a spawn action
             elif score == 0:
@@ -723,9 +783,12 @@ class MCT:
         while count < max_iterations: # Can include memory and time constraint in the while loop as well 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
-            
-            while not node.board.game_over and node.fully_explored: #len(node.children) <= node.total / 2:
-                node = node.largest_ucb()
+            #random = 0
+            while not node.board.game_over and node.fully_explored:
+               #random += 1
+               #print(random)
+               tmp = node.largest_ucb()
+               node = tmp
             
             # print("\n largest UCB node:")
             # node.print_node_data
@@ -747,7 +810,7 @@ class MCT:
 
             count += 1
 
-        root.print_node_data
+        #root.print_node_data
         action = root.best_final_action()
 
 #        root.print_node_data
@@ -757,7 +820,10 @@ class MCT:
         
 
 #        print(render_board(root.board.grid_state, ansi = True)) 
-#        root.board.print_board_data
+        #root.board.print_board_data
+        #root.print_node_data
+        root.print_child_node_data
+        print(f"number of children is {len(root.children)}")
         return action
 
 

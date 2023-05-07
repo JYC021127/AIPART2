@@ -91,7 +91,7 @@ class NODE:
         #random_action = random.choice(actions)
         random_action = self.board.heuristic_1(actions)
 
-        del actions
+        # del actions # Apparently this is not needed 
 
         # Create / Deepcopy original grid and apply the random action
         board = deepcopy(self.board)
@@ -157,10 +157,10 @@ class NODE:
 #            print(len(actions))
 #            print(node.board.grid_state)
 
-            del actions
+            #del actions # Apparently not needed
             node.board.apply_action(random_action)
         winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
-        del node
+        # del node # Apparently not needed
 
         return winner
 
@@ -792,7 +792,10 @@ class MCT:
 
         # print("\n Root is: ")
         #root.board.print_board_data
-
+        
+        print("In the start, the data for the children of the root are:")
+        root.print_child_node_data
+        
         while count < max_iterations: # Can include memory and time constraint in the while loop as well 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
@@ -801,7 +804,10 @@ class MCT:
                 print(f"tree traversed {random} times")
                 random += 1
                 node = node.largest_ucb()
-            
+                print(node.board.game_over)
+                print(node.fully_explored)
+                print(node.print_node_data)
+
             # print("\n largest UCB node:")
             # node.print_node_data
             # node.board.print_board_data

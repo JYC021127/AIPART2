@@ -259,7 +259,7 @@ class NODE:
         print(f"The action is {self.action}")
         print(f"The parent node is {self.parent}")
         print(f"Total of {self.total} child nodes")
-        print(f"The children of the node are {self.children}")
+        print(f"There are {len(self.children)} children, and the children nodes are {self.children}")
         print(f"The total legal moves of the node are {self.total}")
         print(f"The number of wins of the node is {self.wins}")
         print(f"The number of playouts of the node is {self.playouts}")
@@ -858,9 +858,10 @@ class MCT:
 
 #        print(render_board(root.board.grid_state, ansi = True)) 
         #root.board.print_board_data
-        #root.print_node_data
-        root.children[0].print_child_node_data
-        print(f"number of children is {len(root.children)}")
+        root.print_node_data
+        #root.children[0].print_child_node_data 
+        #print(f"number of children is {len(root.children)}")
+        
         return action
 
 

@@ -285,7 +285,7 @@ class BOARD:
         return legal_actions
         
 
-    # Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary (Not written yet)
+    # Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary
     # format of changes_dict: {"action": "spread" / "spawn" , "node_origin": (from_cell coordinate, (colour, power)), "changes":{coordinates: (prev_colour, prev_power)}}
     # Changes dictionary include the coordinate and their information before action was applied
 
@@ -302,13 +302,13 @@ class BOARD:
             # Update board information accordingly 
             if colour == 'r':
                 self.num_red -= 1
-            else
+            else:
                 self.num_blue -= 1
             self.total_power -= 1
             
 
         elif changes_dict["action"] == "spread":
-
+            
             # Dictionary of changes
             changes = changes_dict["changes"]
 
@@ -560,6 +560,7 @@ class BOARD:
                 # currently prioritising spread over spawn actions
 
             ##################
+            # Changing this section right now
             # TO CHANGE / OPTIMIZE 
             # try not to deepcopy here
             # write a undo action function that stores the old dictionary

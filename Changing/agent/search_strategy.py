@@ -20,10 +20,12 @@ MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teache
 
 class DIR:
     coord = [(0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1), (1, 0)]
+    hex_dir = [HexDir.Up, HexDir.UpRight, HexDir.DownRight, HexDir.Down, HexDir.DownLeft, HexDir.UpLeft]
+
 # Class representing Nodes of the Monte Carlo Tree
 class NODE:
     def __init__(self, board, action = None, parent = None, children = None, total = 0, wins = 0, playouts = 0):
-        self.board = board # Current grid_state, may need to change the data structure to cater for HexPos since we are using teachers actions code 
+        self.board = board # Infexion grid and relevant information relating to the grid  
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
         self.children = children if children is not None else [] # Children is children if not, otherwise it is empty list 
@@ -40,46 +42,36 @@ class NODE:
         self.children.append(child)
              
     
-    # Function that generates a new child node of the selected node (the selection policy was random)
     '''
+    Function that generates a new child node of the selected node (the selection policy is based on specialized game knowledge): 
+        - Avoid picking unlikely actions, spawning on random region of the board, Spawning next to opponent, Killing own piece (killing own power 6)
+        - Favour exploring regions that are promising for both colours: Spawning in clusters, spreading if opponent is reachable 
+
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
     '''
     def expand(self):
-        # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
         
         ###########
         # try sorting actions according to heuristic directly from the grid_State, if there is time -> save resources
         ######
-        actions = self.board.get_legal_actions
 
-
-        #random_action = random.choice(actions)
+        # Randomly selecting an action from a list of favourable / likely actions
+        actions = self.board.get_legal_actions 
         random_action = self.board.heuristic_1(actions)
+        # del actions # Apparently this is not needed, but can be used 
 
-        # del actions # Apparently this is not needed 
 
-        # Create / Deepcopy original grid and apply the random action
+        # Create / Deepcopy original grid and apply the random action to the board
         board = deepcopy(self.board)
-#        print(render_board(board.grid_state, ansi = True))
-#
         board.apply_action(random_action)
-#        print(render_board(board.grid_state, ansi = True))
 
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
         child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
 
-        # Feel like child is initialized and added correctly 
-#        print("Make sure that the new child is initialized correctly:")
-#        child.print_node_data
-#
-#        print("node before adding child")
-#        self.print_node_data
-
-        
+        # Add child to self.children list
         self.add_child(child)
         
-#        print("node after adding child")
-#        self.print_node_data
+        # Return the child node (we need to simulate this node)
         return child
 
     
@@ -90,48 +82,33 @@ class NODE:
     '''
     def simulate(self):
 
-        # Create a deep copy of the node we can modify, otherwise we end up deleting the node in our tree
+        # Create a deep copy of the node we can modify (independent of the node on the tree)
         node = deepcopy(self)
 
+        # Avoiding errors
         node.parent = None
         node.children = None
         node.action = None
         node.total = 0
+        
         ###################################
-        # add a condition for while loop:
-            # stop if one of the colour is obviously winning at one state?
+        # Add a condition to "shortcircuit" simulation if one colour is obviously going to win (perhaps even when |num_red - num_blue| > 10)
+        # But we also need to add a new function, because the winning condition has changed
+
+        # While not game over, keep playing a move (random at the moment: will change this to bias good moves eventually)
         while not node.board.game_over:
             actions = node.board.get_legal_actions
-
-            # Testing 
-#            node.board.print_board_data
-#            print(render_board(node.board.grid_state, ansi = True)) 
+            random_action = random.choice(actions)
+            #random_action = node.board.heuristic(actions)
             
-#            if len(actions) == 0:
-#                print("actions are:")
-#                print(actions)
-#                print("board info is ")
-#                node.board.print_board_data
-#                print(render_board(node.board.grid_state, ansi = True)) 
-
-            #random_action = random.choice(actions)
-            random_action = node.board.heuristic(actions)
-            
-#            print(f"random action is {random_action}")
-
-#            print(len(actions))
-#            print(node.board.grid_state)
-
             #del actions # Apparently not needed
             node.board.apply_action(random_action)
-            
-            # Testing
-            #print(render_board(node.board.grid_state, ansi = True))
-
-        winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
-        
+           
+        # Evaluate winner, after game ending condition satisfied (escaped while loop) 
+        winner = node.board.winner   
         # del node # Apparently not needed
-
+        
+        # Winning colour
         return winner
 
 
@@ -161,15 +138,19 @@ class NODE:
         return self.playouts >= self.total
 
     # Function that checks whether a node is explored "enough" (This can be tweaked to see what works the best)
+    '''
+    O(1), accessing and calculation
+    '''
     @property 
-    def explored_enough(self):        
-        if len(self.children) >= (self.total / 4) and len(self.children) >= 10:
+    def explored_enough(self):       
+        # Explored enough, if 1/4 of of total branches are searched and more than 10 branches already searched
+        if len(self.children) >= (self.total / 5) and len(self.children) >= 10:
             return True
+
+        # Explored enough, if every branch is explored at least once
         if self.fully_explored:
             return True
         return False
-
-
 
 
     # calculate UCB1 score
@@ -209,10 +190,11 @@ class NODE:
     def best_final_action(self):
         # self.children is list of child nodes, lamda takes child nodes and returns playouts, max returns the child of the most playouts
         best_child = max(self.children, key = lambda child: child.playouts)
-
+            
+        # Action applied to parent grid_state to get to child grid_state
         return best_child.action
 
-    # For debugging purposes: function that prints the fild of the NODE class
+    # For debugging purposes: function that prints the fields of the NODE class
     @property
     def print_node_data(self):
         print("Printing Node data:")
@@ -226,7 +208,7 @@ class NODE:
         print(f"The number of playouts of the node is {self.playouts}")
 
 
-    # For debugging purposes: function that prints the fild of the NODE class
+    # For debugging purposes: function that prints the fields of every child NODE
     @property
     def print_child_node_data(self):
         count = 1
@@ -236,7 +218,7 @@ class NODE:
             child.print_node_data
             count += 1
    
-    # For debugging purposes: (should) print the whole tree 
+    # For debugging purposes: function that prints the fields of every NODE on the tree 
     @property 
     def print_whole_tee_node_data(self):
         self.print_node_data
@@ -250,11 +232,11 @@ class NODE:
 class BOARD:
     
     def __init__(self, grid_state, num_blue = 0, num_red = 0, total_power = 0, turns = 0):
-        self.grid_state = grid_state
-        self.num_blue = num_blue
-        self.num_red = num_red
-        self.total_power = total_power
-        self.turns = turns
+        self.grid_state = grid_state # Dictionary representing the board, coordinates : (colour, power)
+        self.num_blue = num_blue # Number of blues on the board 
+        self.num_red = num_red # Number of red on the board
+        self.total_power = total_power # Total power of the board
+        self.turns = turns # Total turns from empty board to current board 
     
 
     # Function that calculates all the legal moves a player can do (can be found by even vs odd of self.board.turns since red starts game first)
@@ -275,32 +257,31 @@ class BOARD:
         for x in range(0, 7):
             for y in range(0, 7):
                 coord = (x, y)
-                if flag: # flag? 
-                    # spawn action
+
+                # Spawn action allowed if total power < 49, and coordinate is not currently occupied
+                if flag:  
                     if coord not in self.grid_state:
                         legal_actions.append(SpawnAction(HexPos(coord[0], coord[1])))
                     
-                # spread action, this can happen independent to the total power of the board state 
-                if coord in self.grid_state: # Check whether value inside, otherwise it raises key error i think
+                # Spread action allowed if origin of spread is the same as the colour of current player turn
+                if coord in self.grid_state: 
                     if self.grid_state[coord][0] == self.player_turn:
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Up))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpRight))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownRight))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.Down))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.DownLeft))
-                        legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), HexDir.UpLeft))
+                        for direction in DIR.hex_dir:
+                            legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), direction))
+
+        # return list of legal actions
         return legal_actions
         
 
-    # Function that takes an action (either spread or spawn), and applies the action to the board / grid_state
-    def apply_action(self, action: Action): # turn() function used in referee > game > __init__.py
+    # Function that takes an action (either spread or spawn), and applies the action to the board / grid_state, updating the board accordingly 
+    def apply_action(self, action: Action): 
         match action: 
             case SpawnAction():
                 self.resolve_spawn_action(action)
             case SpreadAction():
                 self.resolve_spread_action(action)
             case _:
-                raise ValueError("This isn't supposed to happen. The only 2 actions should be Spread and Spawn ") # Not sure whether Raise ValueError works
+                raise ValueError("This isn't supposed to happen. The only 2 actions should be Spread and Spawn ") 
         self.turns += 1
 
 
@@ -401,6 +382,10 @@ class BOARD:
             self.num_blue -= 1
         del self.grid_state[from_cell]
         
+
+    # Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary (Not written yet)
+#    def undo_action(self, change_dict)
+
     
     # calculate the score of a board state depending on number of moves to end the game
     def board_score(self):
@@ -734,7 +719,7 @@ class BOARD:
                 return 'r'
 
 
-    # returns the colour of the player with max power
+    # Function that returns the player / colour with the most total power on the board 
     def max_power_colour(self):
         blue = 0
         red = 0
@@ -773,37 +758,30 @@ class MCT:
     def mcts(self, max_iterations):
         count = 0
         root = self.root
-
-        # print("\n Root is: ")
-        #root.board.print_board_data
-        
-        print("In the start, the data for the children of the root are:")
-        root.print_child_node_data
+ 
+#        print("In the start, the data for the children of the root are:")
+#        root.print_child_node_data
         
         while count < max_iterations: # Can include memory and time constraint in the while loop as well 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
 
-            random = 1
+#            random = 1
 
             while not node.board.game_over and node.explored_enough:
-                print(f"tree traversed {random} times, it looks like this:")
-                print(render_board(node.board.grid_state, ansi = True))
-                random += 1
-             # node = node.children[0] # A random idea
+#                print(f"tree traversed {random} times, it looks like this:")
+#                print(render_board(node.board.grid_state, ansi = True))
+#                random += 1
+             # node = node.children[0] # A random idea for checking
                 node = node.largest_ucb()
                 
-            print(f"The chosen node looks like this:")
-            print(render_board(node.board.grid_state, ansi = True))
+#            print(f"The chosen node looks like this:")
+#            print(render_board(node.board.grid_state, ansi = True))
 
-#
-            # print("\n largest UCB node:")
-            # node.print_node_data
-            # node.board.print_board_data
            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.explored_enough:
-                node = node.expand() # <- find possible moves
+                node = node.expand() # Generates a child node that is most likely
            
             # print("\n Expanded node: ")
             # node.print_node_data
@@ -819,17 +797,7 @@ class MCT:
 
         #root.print_node_data
         action = root.best_final_action()
-
-#        root.print_node_data
-#        root.board.print_board_data
-        #print("Legal actions are:")
-        #print(root.board.get_legal_actions)
-        
-
-#        print(render_board(root.board.grid_state, ansi = True)) 
-        #root.board.print_board_data
-        #root.print_node_data
-        
+ 
 
         # Purely Testing ##################
 #        print("Printing the whole tree")

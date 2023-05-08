@@ -10,7 +10,7 @@ from .search_strategy import *
 from copy import deepcopy
 
 # Planning to write a function in a different python file and just import it into this afterwards 
-MAX_ITERATIONS = 500 
+MAX_ITERATIONS = 200 
 
 
 # This is the entry point for your game playing agent. Currently the agent
@@ -24,14 +24,18 @@ class Agent:
         """
         Initialise the agent.
         """
-        self.mct = MCT(NODE(BOARD({})))
-        self._color = color
+        #self.mct = MCT(NODE(BOARD({})))
+        #self._color = color
 
         match color:
             case PlayerColor.RED:
                 print("Testing: I am playing as red")
+                self.mct = MCT(NODE(BOARD({})))
+                self._color = color
             case PlayerColor.BLUE:
                 print("Testing: I am playing as blue")
+                self.mct = MCT(NODE(BOARD({})))
+                self._color = color
 
     def action(self, **referee: dict) -> Action:
         """
@@ -62,41 +66,34 @@ class Agent:
             case SpreadAction(cell, direction):
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
-        # print("number of children:")
-        # print(len(self.mct.root.children))
-        # self.mct.root.print_node_data
-        # print("root before: ")
-        # tmp = self.mct.root
-        # print(tmp)
         self.update(action)
-        # print("root after: ")
-        # print(self.mct.root)
+
+
+
+
     
 
-
+    # Function that updates root of the tree based on enemy action  
     def update(self, action: Action):
-        flag = 0
+        flag = 1
         for child in self.mct.root.children:
-            #child.print_node_data
             # same action as child, set root as child
-            if child.action == action:
-                # print(child.action == action)
-                #print(child.children)
-                
-                del self.mct.root.children
+            if child.action == action:  
+                child.parent = None
+                child.action = None
+
+                # Rely on inbuild python memory recycling
+#                del self.mct.root.children
                 self.mct.root = child
-
-                # print("root.children:")
-                # print(self.mct.root.children)
-                flag = 1
+                flag = 0
+                print("Action found in some child node")
                 break
-
-        if flag == 0:
-            # print("Action not found in child node")
+        
+        # Opponents move is not found in root.children 
+        if flag:
+            print("Action not found in child node")
             previous = self.mct.root #previous root 
-#            print("previous board is:")
-#            previous.board.print_board_data
-
+                
             previous.board.apply_action(action)
-            self.mct.root = NODE(board = previous.board, total = len(previous.board.get_legal_actions))
+            self.mct.root = NODE(board = deepcopy(previous.board), total = len(previous.board.get_legal_actions))
             del previous

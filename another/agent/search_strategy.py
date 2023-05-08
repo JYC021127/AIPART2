@@ -437,6 +437,29 @@ class BOARD:
         return False
 
 
+    # support function for undo_action (returns a dictionary of changed cells for SPREAD action only), we don't want the cell for SPAWN here!
+    def undo_support(self, action):
+        cell = action.cell
+        from_cell = (int(cell.r), int(cell.q))
+        power = self.eval_power(from_cell)
+
+        # this is for setting up changed dict
+        changed = {}
+        if isinstance(action, SpreadAction):
+            dir = action.direction
+            dir = (int(dir.r), int(dir.q))
+            # add in dict if it's along the path of the spread
+            for i in range(power):
+                path_cell = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
+                path_cell = self.fix_tuple(path_cell)
+                if path_cell in self.grid_state:
+                    changed[path_cell] = self.grid_state[path_cell]
+                else:
+                    changed[path_cell] = {}
+
+        return changed
+
+
     '''
 Current Heuristic (for heuristic_1):
     Obvious
@@ -467,30 +490,12 @@ Current Heuristic (for heuristic_1):
             score = 0 # used to rank actions
             cell = action.cell
             from_cell = (int(cell.r), int(cell.q))
+            # the following variables will be used as parameters for undo_action()
             colour = self.player_turn
             init_red = self.num_red
             init_blue = self.num_blue
-
-            # action is spread
-            if from_cell in self.grid_state:
-                power = self.grid_state[from_cell][1]
-            # action is spawn
-            else:
-                power = 0
-            
-            ####### this is for setting up undo_action, we're not adding spawn action in changed{}
-            changed = {}
-            if isinstance(action, SpreadAction):
-                dir = action.direction
-                dir = (int(dir.r), int(dir.q))
-                # add in dict if it's along the path of the spread
-                for i in range(power):
-                    path_cell = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
-                    path_cell = self.fix_tuple(path_cell)
-                    if path_cell in self.grid_state:
-                        changed[path_cell] = self.grid_state[path_cell]
-                    else:
-                        changed[path_cell] = {}
+            power = self.eval_power(from_cell)
+            changed = self.undo_support(action)
 
             print(f"******************************\ninitial grid:")
             self.print_board_data
@@ -536,7 +541,6 @@ Current Heuristic (for heuristic_1):
 
                 elif isinstance(action, SpreadAction):
                     dir = action.direction
-                    from_cell = (int(cell.r), int(cell.q))
                     dir = (int(dir.r), int(dir.q))
                     flag = 1
                     # bad action if spreading does not kill any enemy 
@@ -564,7 +568,6 @@ Current Heuristic (for heuristic_1):
                         # if there are no neighbour enemy after spreading
                         if not check:
                             obvious.append(action)
-
 
             # note: score won't be <= 0 if it's a spawn action
             elif score == 0:
@@ -635,7 +638,7 @@ Current Heuristic (for heuristic_1):
                     
 
 
-    # heuristic for node selection, returns best action out of all legal actions
+    # NOT USING THIS. heuristic for node selection, returns best action out of all legal actions
     def heuristic(self, actions):
         obvious = []
         good = []
@@ -730,9 +733,12 @@ Current Heuristic (for heuristic_1):
         if coordinate in self.grid_state:
             return self.grid_state[coordinate][0]
     
-    # Assuming coordinate is inside the board, returns the power of the coordinate on the board
+    # Assuming coordinate is inside the board, returns the power of the coordinate on the board, returns 0 if it's not on the board
     def eval_power(self, coordinate):
-        return self.grid_state[coordinate][1]
+        if coordinate in self.grid_state:
+            return self.grid_state[coordinate][1]
+        else:
+            return 0
 
     # Function that does vector addition for 2 coordinates
     def add_tuple(self, a, b):

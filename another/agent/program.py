@@ -55,15 +55,8 @@ class Agent:
             case SpreadAction(cell, direction):
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
-        # print("number of children:")
-        # print(len(self.mct.root.children))
-        # self.mct.root.print_node_data
-        # print("root before: ")
-        # tmp = self.mct.root
-        # print(tmp)
+
         self.update(action, color)
-        # print("root after: ")
-        # print(self.mct.root)
     
 
 
@@ -88,7 +81,7 @@ class Agent:
                 print("\n\n\nAction found in some child node, tree updated \n")
                 break
         
-        # Opponents move is not found in root.children
+        # Opponent's move is not found in root.children
         if flag:
             print("\n\n\nAction not found in child node, new tree created \n")
             parent = self.mct.root
@@ -97,13 +90,6 @@ class Agent:
             new_child = NODE(board = new_board, parent = parent, action = action, total = len(self.mct.root.board.get_legal_actions))
             self.mct.root.children.append(new_child)
             self.mct.root = new_child
-
-            #previous = self.mct.root #previous root 
-#            print("previous board is:")
-#            previous.board.print_board_data
-
-            #previous.board.apply_action(action)
-            #self.mct.root = NODE(board = deepcopy(previous.board), total = len(previous.board.get_legal_actions))
             print(f"new root is {self.mct.root}")
 
 

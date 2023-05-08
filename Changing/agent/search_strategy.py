@@ -844,7 +844,8 @@ class BOARD:
     @property
     def print_board_data(self):
         print("\n Printing Board Data:")
-        print(f"The grid state is {self.grid_state}")
+        print(f"The grid state is {self.grid_state}\n The board looks like this:")
+        print(render_board(self.grid_state, ansi = True))
         print(f"The number of blue nodes on the board is {self.num_blue}")
         print(f"The number of red nodes on the board is {self.num_red}")
         print(f"The total power of the board is {self.total_power}")

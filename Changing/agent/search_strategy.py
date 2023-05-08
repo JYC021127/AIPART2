@@ -92,7 +92,8 @@ class NODE:
         node.total = 0
         
         ###################################
-        # Add a condition to "shortcircuit" simulation if one colour is obviously going to win (perhaps even when |num_red - num_blue| > 10)
+        # TO CHANGE / OPTIMIZE
+        # Add a condition to "shortcircuit" simulation if one colour is obviously going to win (perhaps even when |num_red - num_blue| > 10) -> reduce simulation time 
         # But we also need to add a new function, because the winning condition has changed
 
         # While not game over, keep playing a move (random at the moment: will change this to bias good moves eventually)
@@ -137,6 +138,8 @@ class NODE:
     def fully_explored(self):
         return self.playouts >= self.total
 
+
+    # OPTIMIZE
     # Function that checks whether a node is explored "enough" (This can be tweaked to see what works the best)
     '''
     O(1), accessing and calculation
@@ -144,7 +147,7 @@ class NODE:
     @property 
     def explored_enough(self):       
         # Explored enough, if 1/4 of of total branches are searched and more than 10 branches already searched
-        if len(self.children) >= (self.total / 5) and len(self.children) >= 10:
+        if len(self.children) >= (self.total / 5) and len(self.children) >= 20:
             return True
 
         # Explored enough, if every branch is explored at least once
@@ -282,6 +285,94 @@ class BOARD:
         return legal_actions
         
 
+    # Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary (Not written yet)
+    # format of changes_dict: {"action": "spread" / "spawn" , "node_origin": (from_cell coordinate, (colour, power)), "changes":{coordinates: (prev_colour, prev_power)}}
+    # Changes dictionary include the coordinate and their information before action was applied
+
+    def undo_action(self, changes_dict: dict):
+
+        # If the action made was spawn, delete the spawned cell and update the board accordingly 
+        if changes_dict["action"] == "spawn":
+            spawned_cell = changes_dict["node_origin"][0] # coordinate of node_origin
+
+            # Get colour of to be deleted cell
+            colour = self.eval_colour(spawned_cell)
+            del self.grid_state[spawned_cell]
+            
+            # Update board information accordingly 
+            if colour == 'r':
+                self.num_red -= 1
+            else
+                self.num_blue -= 1
+            self.total_power -= 1
+            
+
+        elif changes_dict["action"] == "spread":
+
+            # Dictionary of changes
+            changes = changes_dict["changes"]
+
+            # Store coordinate, (colour, power)
+            before_spread_coord = changes_dict["node_origin"][0] 
+            before_spread_values = changes_dict["node_origin"][1] 
+            
+            colour = self.eval_colour(before_spread_coord)
+            self.grid_state[before_spread_coord] = before_spread_values
+           
+            # Update dictionary for spread origin node
+            if colour == 'r':
+                self.num_red += 1
+            else:
+                self.num_blue += 1
+            self.total_power += before_spread_values[1] 
+           
+            # Update changed cells caused by spread: Delete old values, and update new values each time
+            for coordinate, value in changes.items():
+                # colour and power of reverted coordinate
+                colour_revert = value[0]
+                power_revert = value[1]
+                
+                # Cells with power 7 disappear ("edge case"): Add this cell in first to avoid error  
+                if coordinate not in self.grid_state:
+                    if power_revert != 6: # Sanity check, delete afterwards: if a now empty cell isn't reverted to power 6 -> error
+                        raise ValueError("coordinate that wasn't in dictionary to be reverted doesn't have power 6")
+                   
+                    # Update grid_state dictionary
+                    self.grid_state[coordinate] = value
+
+                    # Update board data
+                    if colour_revert == 'r':
+                        self.num_red += 1
+                    else:
+                        self.num_blue += 1
+                    self.total_power += 6
+
+                    continue # Skip current for loop iteration
+
+
+                # colour and power of coordinate now (to be reverted), we know they are inside dictionary
+                colour_now = self.eval_colour(coordinate)
+                power_now = self.eval_power(coordinate)
+                
+                # Update board information, assuming coordinate was deleted
+                if colour_now == 'r':
+                    self.num_red -= 1
+                else:
+                    self.num_blue -= 1
+                self.total_power -= power_now
+                
+                # Replace coordinate info now, with reverted coordinate info
+                self.grid_state[coordinate] = value
+               
+                # Update board information, since coordinate value reverted was updated
+                if colour_revert == 'r':
+                    self.num_red += 1
+                else:
+                    self.num_blue += 1
+                self.total_power += power_revert
+
+        self.turns -= 1
+
     # Function that takes an action (either spread or spawn), and applies the action to the board / grid_state, updating the board accordingly 
     def apply_action(self, action: Action): 
         match action: 
@@ -392,9 +483,6 @@ class BOARD:
         del self.grid_state[from_cell]
         
 
-    # Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary (Not written yet)
-#    def undo_action(self, change_dict)
-
     
     # calculate the score of a board state depending on number of moves to end the game
     def board_score(self):
@@ -472,6 +560,7 @@ class BOARD:
                 # currently prioritising spread over spawn actions
 
             ##################
+            # TO CHANGE / OPTIMIZE 
             # try not to deepcopy here
             # write a undo action function that stores the old dictionary
             ################
@@ -664,6 +753,10 @@ class BOARD:
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
     def eval_colour(self, coordinate):
         return self.grid_state[coordinate][0]
+
+    # Assuming coordinate is inside the board, returns the power of the coordinate on the board
+    def eval_power(self, coordinate):
+        return self.grid_state[coordinate][1]
 
     # Function that does vector addition for 2 coordinates
     def add_tuple(self, a, b):

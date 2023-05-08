@@ -447,7 +447,6 @@ class BOARD:
         return False
 
 
-
     # heuristic 1.0 (just trying a weird idea, currently only used in expand())
     def heuristic_1(self, actions):
         obvious = []
@@ -475,7 +474,7 @@ class BOARD:
             init_blue = self.num_blue
             new_blue = tmp.num_blue
 
-            flag = 1
+            flag = 0
 
             # the idea of how score is calculated is here...
             if colour == 'r':
@@ -493,20 +492,21 @@ class BOARD:
                     for dir in DIR.coord:
                         tmp_coord = (coordinates[0] + dir[0], coordinates[1] + dir[1])
                         if tmp_coord in tmp.grid_state:
-                            # spawning next to enemy
+                            # neighbour is an enemy
                             if (tmp.grid_state[tmp_coord])[0] != colour:
                                 bad.append(action)
-                                flag = 0
+                                flag = 1
                                 break
-                            # spawning next to own
+                            # neighbour is own 
                             else:
-                                good.append(action)
-                                flag = 0
-                                break
+                                flag = 2
 
                     # spawning in an empty surrounding
-                    if flag:
+                    if flag == 0:
                         average.append(action)
+                    # spawning next to own cell, with no enemy surrounding
+                    elif flag == 2:
+                        good.append(action)
 
                 elif isinstance(action, SpreadAction):
                     cell, dir = action.cell, action.direction
@@ -557,6 +557,7 @@ class BOARD:
         else:
             if len(bad) != 0:
                 return random.choice(bad)
+ 
 
 
 

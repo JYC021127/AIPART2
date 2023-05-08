@@ -89,7 +89,6 @@ class NODE:
         ######
         actions = self.board.get_legal_actions
         total = len(actions)
-        flag = 0 # used to check if a new child can be added
         # print(actions)
         # act = list(set(actions))
         # print(act)
@@ -104,10 +103,13 @@ class NODE:
         while count < total:
             #random_action = random.choice(actions)
             random_action = self.board.heuristic_1(actions)
+            
+            # if child already exists, remove child from actions list
             if self.child_exists(random_action):
                 actions.remove(random_action)
+
+            # if child doesn't exist, add child in children
             else:
-                # add the new child if it's not in children
                 #print("TRUE: child doesn't exist in children, adding child")
                 # del actions # Apparently this is not needed 
                 # Create / Deepcopy original grid and apply the random action
@@ -121,6 +123,7 @@ class NODE:
                 new_child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
                 self.add_child(new_child)
                 return new_child
+            
             count += 1
 
 
@@ -157,7 +160,7 @@ class NODE:
 #                print(render_board(node.board.grid_state, ansi = True)) 
 
             #random_action = random.choice(actions)
-            random_action = self.board.heuristic(actions)
+            random_action = node.board.heuristic(actions)
             
 #            print(f"random action is {random_action}")
 

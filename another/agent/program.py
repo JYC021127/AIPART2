@@ -6,11 +6,7 @@ from referee.game import \
 
 from .search_strategy import *
 
-
 from copy import deepcopy
-
-# Planning to write a function in a different python file and just import it into this afterwards 
-MAX_ITERATIONS = 1000
 
 
 # This is the entry point for your game playing agent. Currently the agent
@@ -40,11 +36,11 @@ class Agent:
         match self._color:
             case PlayerColor.RED:
                 print("RED ACTION")
-                return self.mct.mcts(MAX_ITERATIONS)
+                return self.mct.mcts()
 
             case PlayerColor.BLUE:
                 print("BLUE ACTION")
-                return self.mct.mcts(MAX_ITERATIONS)
+                return self.mct.mcts()
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
         """
@@ -65,35 +61,47 @@ class Agent:
         # print("root before: ")
         # tmp = self.mct.root
         # print(tmp)
-        self.update(action)
+        self.update(action, color)
         # print("root after: ")
         # print(self.mct.root)
     
 
 
-    def update(self, action: Action):
-        flag = 0
+    def update(self, action: Action, color: PlayerColor):
+
+        if color != self._color:
+            print(f"Player is {color}, but updating {self._color} tree")
+
+
+        flag = 1
         for child in self.mct.root.children:
             #child.print_node_data
             # same action as child, set root as child
             if child.action == action:
-                # print(child.action == action)
-                #print(child.children)
-                
-                del self.mct.root.children
+                child.parent = None
+                child.action = None
+
+                # Rely on inbuild python memory recycling
+#                del self.mct.root.children
                 self.mct.root = child
 
                 # print("root.children:")
                 # print(self.mct.root.children)
-                flag = 1
+                flag = 0
+                print("\n\n\nAction found in some child node, tree updated \n")
                 break
-
-        if flag == 0:
+        
+        # Opponents move is not found in root.children
+        if flag:
+            print("\n\n\nAction not found in child node, new tree created \n")
+            #self.mct.root = self.mct.root.parent
             # print("Action not found in child node")
             previous = self.mct.root #previous root 
 #            print("previous board is:")
 #            previous.board.print_board_data
 
             previous.board.apply_action(action)
-            self.mct.root = NODE(board = previous.board, total = len(previous.board.get_legal_actions))
+            self.mct.root = NODE(board = deepcopy(previous.board), total = len(previous.board.get_legal_actions))
+            print(f"new root is {self.mct.root}")
             del previous
+

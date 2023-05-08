@@ -766,12 +766,12 @@ class MCT:
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
 
-#            random = 1
+            random = 1
 
             while not node.board.game_over and node.explored_enough:
-#                print(f"tree traversed {random} times, it looks like this:")
+                print(f"tree traversed {random} times, it looks like this:")
 #                print(render_board(node.board.grid_state, ansi = True))
-#                random += 1
+                random += 1
              # node = node.children[0] # A random idea for checking
                 node = node.largest_ucb()
                 

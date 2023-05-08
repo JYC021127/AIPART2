@@ -10,7 +10,7 @@ from .search_strategy import *
 from copy import deepcopy
 
 # Planning to write a function in a different python file and just import it into this afterwards 
-MAX_ITERATIONS = 200 
+MAX_ITERATIONS = 1000 
 
 
 # This is the entry point for your game playing agent. Currently the agent
@@ -86,12 +86,12 @@ class Agent:
 #                del self.mct.root.children
                 self.mct.root = child
                 flag = 0
-                print("Action found in some child node")
+                print("\n\n\n\n\nAction found in some child node\n")
                 break
         
         # Opponents move is not found in root.children 
         if flag:
-            print("Action not found in child node")
+            print("\n\n\n\n\nAction not found in child node\n")
             previous = self.mct.root #previous root 
                 
             previous.board.apply_action(action)

@@ -195,9 +195,9 @@ class NODE:
         return best_child.action
 
     # For debugging purposes: function that prints the fields of the NODE class
-    @property
-    def print_node_data(self):
+    def print_node_data(self, depth = 0):
         print("Printing Node data:")
+        print(f"Node depth is {depth}")
         print(f"The node itself is {self} \nIt looks like this:")
         print(render_board(self.board.grid_state, ansi = True))
         print(f"The action is {self.action}")
@@ -208,6 +208,19 @@ class NODE:
         print(f"The number of playouts of the node is {self.playouts}")
 
 
+    # For debugging purposes: function that prints the fields of every NODE on the tree (Also counts the number of nodes, and prints the node depth) 
+    def print_whole_tree_node_data(self, depth = 0, counter = None):
+        if counter is None:
+            counter = {'count': 0}
+        
+        self.print_node_data(depth)
+        counter['count'] += 1
+        if self.children:
+            for child in self.children:
+                child.print_whole_tree_node_data(depth + 1, counter)
+        
+        return counter['count']
+
     # For debugging purposes: function that prints the fields of every child NODE
     @property
     def print_child_node_data(self):
@@ -215,17 +228,9 @@ class NODE:
         for child in self.children:
             print(f"child {count} node data:")
             print(render_board(child.board.grid_state, ansi = True))
-            child.print_node_data
+            child.print_node_data()
             count += 1
    
-    # For debugging purposes: function that prints the fields of every NODE on the tree 
-    @property 
-    def print_whole_tee_node_data(self):
-        self.print_node_data
-        if self.children:
-            for child in self.children:
-                child.print_whole_tee_node_data
-
 
 
 # Class representing information relating to the grid
@@ -785,7 +790,7 @@ class MCT:
                 node = node.expand() # Generates a child node that is most likely
            
             # print("\n Expanded node: ")
-            # node.print_node_data
+            # node.print_node_data()
             # node.board.print_board_data
 
             # Simulation: Simulate newly expanded node or save winner of  the terminal state
@@ -796,7 +801,7 @@ class MCT:
 
             count += 1
 
-        #root.print_node_data
+        #root.print_node_data()
         action = root.best_final_action()
  
 

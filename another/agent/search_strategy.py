@@ -66,17 +66,30 @@ class NODE:
         self.children.append(child)
              
     
+    # function that checks if an action already exists in children list
+    def child_exists(self, action):
+        for child in self.children:
+            if action == child.action:
+                return True
+        return False
+                
+        
+
     # Function that generates a new child node of the selected node (the selection policy was random)
     '''
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
     '''
     def expand(self):
+        count = 0
+
         # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
         
         ###########
         # try sorting actions according to heuristic directly from the grid_State
         ######
         actions = self.board.get_legal_actions
+        total = len(actions)
+        flag = 0 # used to check if a new child can be added
         # print(actions)
         # act = list(set(actions))
         # print(act)
@@ -87,35 +100,29 @@ class NODE:
 #        self.board.print_board_data
 #        print("Available actions:", actions)
 
+        # make sure we're not getting the same action to put in children
+        while count < total:
+            #random_action = random.choice(actions)
+            random_action = self.board.heuristic_1(actions)
+            if self.child_exists(random_action):
+                actions.remove(random_action)
+            else:
+                # add the new child if it's not in children
+                #print("TRUE: child doesn't exist in children, adding child")
+                # del actions # Apparently this is not needed 
+                # Create / Deepcopy original grid and apply the random action
+                board = deepcopy(self.board)
+        #        print(render_board(board.grid_state, ansi = True))
+        #
+                board.apply_action(random_action)
+        #        print(render_board(board.grid_state, ansi = True))
 
-        #random_action = random.choice(actions)
-        random_action = self.board.heuristic_1(actions)
+                # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
+                new_child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
+                self.add_child(new_child)
+                return new_child
+            count += 1
 
-        # del actions # Apparently this is not needed 
-
-        # Create / Deepcopy original grid and apply the random action
-        board = deepcopy(self.board)
-#        print(render_board(board.grid_state, ansi = True))
-#
-        board.apply_action(random_action)
-#        print(render_board(board.grid_state, ansi = True))
-
-        # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
-        child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
-
-        # Feel like child is initialized and added correctly 
-#        print("Make sure that the new child is initialized correctly:")
-#        child.print_node_data
-#
-#        print("node before adding child")
-#        self.print_node_data
-
-        
-        self.add_child(child)
-        
-#        print("node after adding child")
-#        self.print_node_data
-        return child
 
     
     # Function that simulates / rollout of the node and returns the colour of the winner
@@ -245,9 +252,10 @@ class NODE:
     # For debugging purposes: function that prints the fild of the NODE class
     @property
     def print_node_data(self):
-        print("Printing Node data:")
+        print("#### Printing Node data: ####")
         print(f"The action is {self.action}")
         print(f"The parent node is {self.parent}")
+        print(f"Total of {self.total} child nodes")
         print(f"The children of the node are {self.children}")
         print(f"The total legal moves of the node are {self.total}")
         print(f"The number of wins of the node is {self.wins}")
@@ -255,6 +263,7 @@ class NODE:
 
     @property
     def print_child_node_data(self):
+        print("#### child node data ####")
         count = 1
         for child in self.children:
             print(f"child {count} node data:")
@@ -262,6 +271,11 @@ class NODE:
             child.print_node_data
             count += 1
 
+    @property
+    def print_children_actions(self):
+        print("#### Printing all children actions ####")
+        for child in self.children:
+            print(child.action)
 # Class representing information relating to the grid
 class BOARD:
     
@@ -801,11 +815,12 @@ class MCT:
             node = root
             random = 1
             while not node.board.game_over and node.fully_explored:
+                #node.print_children_actions
                 print(f"tree traversed {random} times")
                 random += 1
                 node = node.largest_ucb()
-                print(node.board.game_over)
-                print(node.fully_explored)
+                print(f"game over: {node.board.game_over}")
+                print(f"fully_explored: {node.fully_explored}")
                 print(node.print_node_data)
 
             # print("\n largest UCB node:")
@@ -815,6 +830,7 @@ class MCT:
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.fully_explored:
                 node = node.expand() # <- find possible moves
+                print(f"Expanding... Action chosen: {node.action}")
            
             # print("\n Expanded node: ")
             # node.print_node_data

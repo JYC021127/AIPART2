@@ -10,7 +10,7 @@ from .search_strategy import *
 from copy import deepcopy
 
 # Planning to write a function in a different python file and just import it into this afterwards 
-MAX_ITERATIONS = 10000
+MAX_ITERATIONS = 500 
 
 
 # This is the entry point for your game playing agent. Currently the agent
@@ -44,6 +44,9 @@ class Agent:
 
             case PlayerColor.BLUE:
                 print("BLUE ACTION")
+                
+            # Just for testing -> to see if tree is being built correctly (delete this line afterwards) 
+                #return "Make undefined action, end the game. For testing purposes"
                 return self.mct.mcts(MAX_ITERATIONS)
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):

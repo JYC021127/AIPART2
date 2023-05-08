@@ -2,29 +2,6 @@
 
 
 '''
-To do: 
-    1. Initialize root node (state of the game)
-    2. Also need to decide on the node structure (classes)
-        2.1. UCB1 formula for a selection policy 
-        2.2. Required to write some sort of expansion algorithm 
-    3. Simulation (random?, or choose based on heuristics):
-        3.1. Need a function representing game termination (hopefully can copy teachers code from referee)
-        3.2. Also need delete relvant trees after simulation is completed 
-    4. Choose the best action? 
-    5. backpropogating algorithm (also need the result of the simulation) 
-        5.1. Function that works out the winner of the game 
-    6. ALgorithm that finds all the legal moves (Probably have to randomly select one of the moves from this list)
-    7. Also need to limit how many simulations are done each move i
- 
-    
-    Note that the root of the monte carlo tree is continuously changing, the root becomes some child of the monte carlo tree
-    after each move of the game. The initial "parent / root" and other "irrelevant children" can be "discarded" since the game 
-    has already advanced past that state (this is to save memory)
-
-    Also: 
-    - Suppose an action was done, we need to know what the board would look like after the action was applied (can possibly
-    copy code from referee?)
-
     avoid obviously bad moves, i.e. ones that kill yourself. R1 spread towards R6 kills both of them, same as spawning right next to enenmy
 '''
 
@@ -34,7 +11,6 @@ from referee.game import \
 
 
 from .utils import render_board
-
 from math import *
 from copy import deepcopy
 import random
@@ -56,8 +32,6 @@ class NODE:
         self.playouts = playouts # Number of relating sumulations / playouts 
 
          
-
-
     # Method that adds child node to self.children (list of children)
     '''
     O(1) generally, just adding an element into a list
@@ -74,18 +48,9 @@ class NODE:
         # Get a random action from a list of legal actions (when we apply heuristic, we avoid picking actions that are stupid (killing own piece / spawning next to opponent))
         
         ###########
-        # try sorting actions according to heuristic directly from the grid_State
+        # try sorting actions according to heuristic directly from the grid_State, if there is time -> save resources
         ######
         actions = self.board.get_legal_actions
-        # print(actions)
-        # act = list(set(actions))
-        # print(act)
-        # print(f"there are {len(actions)} actions and {len(act)} sets")
-
-#        # Testing:
-#        print("Board State")
-#        self.board.print_board_data
-#        print("Available actions:", actions)
 
 
         #random_action = random.choice(actions)
@@ -150,7 +115,7 @@ class NODE:
 #                print(render_board(node.board.grid_state, ansi = True)) 
 
             #random_action = random.choice(actions)
-            random_action = self.board.heuristic(actions)
+            random_action = node.board.heuristic(actions)
             
 #            print(f"random action is {random_action}")
 
@@ -159,7 +124,12 @@ class NODE:
 
             #del actions # Apparently not needed
             node.board.apply_action(random_action)
+            
+            # Testing
+            #print(render_board(node.board.grid_state, ansi = True))
+
         winner = node.board.winner # we are sure the game has terminated if we exited the while loop (given there are no bugs) 
+        
         # del node # Apparently not needed
 
         return winner
@@ -190,10 +160,10 @@ class NODE:
     def fully_explored(self):
         return self.playouts >= self.total
 
-    # Function that checks whether a node is explored "enough"
+    # Function that checks whether a node is explored "enough" (This can be tweaked to see what works the best)
     @property 
     def explored_enough(self):        
-        if len(self.children) >= (self.total / 3) and len(self.children) >= 20:
+        if len(self.children) >= (self.total / 4) and len(self.children) >= 10:
             return True
         if self.fully_explored:
             return True
@@ -246,13 +216,17 @@ class NODE:
     @property
     def print_node_data(self):
         print("Printing Node data:")
+        print(f"The node itself is {self} \nIt looks like this:")
+        print(render_board(self.board.grid_state, ansi = True))
         print(f"The action is {self.action}")
         print(f"The parent node is {self.parent}")
-        print(f"The children of the node are {self.children}")
+        print(f"There are {len(self.children)} children, and the children nodes are {self.children}")
         print(f"The total legal moves of the node are {self.total}")
         print(f"The number of wins of the node is {self.wins}")
         print(f"The number of playouts of the node is {self.playouts}")
 
+
+    # For debugging purposes: function that prints the fild of the NODE class
     @property
     def print_child_node_data(self):
         count = 1
@@ -261,6 +235,16 @@ class NODE:
             print(render_board(child.board.grid_state, ansi = True))
             child.print_node_data
             count += 1
+   
+    # For debugging purposes: (should) print the whole tree 
+    @property 
+    def print_whole_tee_node_data(self):
+        self.print_node_data
+        if self.children:
+            for child in self.children:
+                child.print_whole_tee_node_data
+
+
 
 # Class representing information relating to the grid
 class BOARD:
@@ -308,7 +292,7 @@ class BOARD:
         return legal_actions
         
 
-    # Function that takes an action (either spread or spawn), and applies the action to the board / gridstate
+    # Function that takes an action (either spread or spawn), and applies the action to the board / grid_state
     def apply_action(self, action: Action): # turn() function used in referee > game > __init__.py
         match action: 
             case SpawnAction():
@@ -770,12 +754,12 @@ class BOARD:
     # Function used for debugging purposes: prints the fields / attributes of the BOARD CLASS
     @property
     def print_board_data(self):
-        print("Printing Board Data:")
+        print("\n Printing Board Data:")
         print(f"The grid state is {self.grid_state}")
         print(f"The number of blue nodes on the board is {self.num_blue}")
         print(f"The number of red nodes on the board is {self.num_red}")
         print(f"The total power of the board is {self.total_power}")
-        print(f"The number of turns of the board is {self.turns}")
+        print(f"The number of turns of the board is {self.turns}\n")
 
 
 
@@ -799,21 +783,26 @@ class MCT:
         while count < max_iterations: # Can include memory and time constraint in the while loop as well 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
-            random = 1
-            while not node.board.game_over and node.fully_explored:
-                print(f"tree traversed {random} times")
-                random += 1
-                node = node.largest_ucb()
-                print(node.board.game_over)
-                print(node.fully_explored)
-                print(node.print_node_data)
 
+            random = 1
+
+            while not node.board.game_over and node.explored_enough:
+                print(f"tree traversed {random} times, it looks like this:")
+                print(render_board(node.board.grid_state, ansi = True))
+                random += 1
+             # node = node.children[0] # A random idea
+                node = node.largest_ucb()
+                
+            print(f"The chosen node looks like this:")
+            print(render_board(node.board.grid_state, ansi = True))
+
+#
             # print("\n largest UCB node:")
             # node.print_node_data
             # node.board.print_board_data
            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
-            if not node.board.game_over and not node.fully_explored:
+            if not node.board.game_over and not node.explored_enough:
                 node = node.expand() # <- find possible moves
            
             # print("\n Expanded node: ")
@@ -840,8 +829,17 @@ class MCT:
 #        print(render_board(root.board.grid_state, ansi = True)) 
         #root.board.print_board_data
         #root.print_node_data
-        root.children[0].print_child_node_data
-        print(f"number of children is {len(root.children)}")
+        
+
+        # Purely Testing ##################
+#        print("Printing the whole tree")
+#        root.print_whole_tee_node_data
+#        print("Finished printing the whole tree") 
+#
+#        root.children[0].print_child_node_data
+#        print(f"number of children is {len(root.children)}")
+        # Purely Testing ##################
+
         return action
 
 

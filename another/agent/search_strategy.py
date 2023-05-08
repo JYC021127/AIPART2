@@ -12,7 +12,7 @@ from math import *
 from copy import deepcopy
 import random
 
-MAX_ITERATIONS = 1000
+MAX_ITERATIONS = 500
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 
@@ -624,17 +624,13 @@ Current Heuristic (for heuristic_1):
                     del self.grid_state[key]
                     self.total_power -= 1
                 else:
+                    self.grid_state[key] = changed[key]
                     # this cell is killed after the action
                     if value[1] == 6:
-                        self.grid_state[key] = changed[key]
                         self.total_power += 6
                     # cell already existed (not killed)
                     else:
-                        lst = list(self.grid_state[key])
-                        lst[1] -= 1
-                        self.grid_state[key] = tuple(lst)
                         self.total_power -= 1
-                        self.grid_state[key] = changed[key]
                     
 
 

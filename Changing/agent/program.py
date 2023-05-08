@@ -68,10 +68,7 @@ class Agent:
                 pass
         self.update(action)
 
-
-
-
-    
+ 
 
     # Function that updates root of the tree based on enemy action  
     def update(self, action: Action):
@@ -86,12 +83,12 @@ class Agent:
 #                del self.mct.root.children
                 self.mct.root = child
                 flag = 0
-                print("\n\n\n\n\nAction found in some child node\n")
+                print("\n\n\n\n\nAction found in some child node, tree updated \n")
                 break
         
         # Opponents move is not found in root.children 
         if flag:
-            print("\n\n\n\n\nAction not found in child node\n")
+            print("\n\n\n\n\nAction not found in child node, new tree created \n")
             previous = self.mct.root #previous root 
                 
             previous.board.apply_action(action)

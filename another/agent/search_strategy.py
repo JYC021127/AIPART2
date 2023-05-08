@@ -296,93 +296,6 @@ class BOARD:
         return legal_actions
 
 
-    # Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary (Not written yet)
-    # format of changes_dict: {"action": "spread" / "spawn" , "node_origin": (from_cell coordinate, (colour, power)), "changes":{coordinates: (prev_colour, prev_power)}}
-    # Changes dictionary include the coordinate and their information before action was applied
-    def undo_action(self, changes_dict: dict):
-        # If the action made was spawn, delete the spawned cell and update the board accordingly
-        if changes_dict["action"] == "spawn":
-            spawned_cell = changes_dict["node_origin"][0] # coordinate of node_origin
-            # Get colour of to be deleted cell
-            colour = self.eval_colour(spawned_cell)
-            del self.grid_state[spawned_cell]
-            
-            # Update board information accordingly
-            if colour == 'r':
-                self.num_red -= 1
-            else:
-                self.num_blue -= 1
-            self.total_power -= 1
-            
-        elif changes_dict["action"] == "spread":
-            # Dictionary of changes
-            changes = changes_dict["changes"]
-            # Store coordinate, (colour, power)
-            before_spread_coord = changes_dict["node_origin"][0]
-            before_spread_values = changes_dict["node_origin"][1]
-            
-            colour = self.eval_colour(before_spread_coord)
-            self.grid_state[before_spread_coord] = before_spread_values
-          
-            # Update dictionary for spread origin node
-            if colour == 'r':
-                self.num_red += 1
-            else:
-                self.num_blue += 1
-            self.total_power += before_spread_values[1]
-          
-            # Update changed cells caused by spread: Delete old values, and update new values each time
-            for coordinate, value in changes.items():
-                # colour and power of reverted coordinate
-                colour_revert = value[0]
-                power_revert = value[1]
-                
-                # Cells with power 7 disappear ("edge case"): Add this cell in first to avoid error  
-                if coordinate not in self.grid_state:
-                    if power_revert != 6: # Sanity check, delete afterwards: if a now empty cell isn't reverted to power 6 -> error
-                        raise ValueError("coordinate that wasn't in dictionary to be reverted doesn't have power 6")
-                  
-                    # ####### added this if statement for empty cells in changes
-                    # if power_revert == 0:
-                    #     del self.grid_state[coordinate]
-                    # else:
-                    # Update grid_state dictionary
-                    self.grid_state[coordinate] = value
-                    # Update board data
-                    if colour_revert == 'r':
-                        self.num_red += 1
-                    else:
-                        self.num_blue += 1
-                    self.total_power += 6
-                    continue # Skip current for loop iteration
-                # colour and power of coordinate now (to be reverted), we know they are inside dictionary
-                colour_now = self.eval_colour(coordinate)
-                power_now = self.eval_power(coordinate)
-                
-                # Update board information, assuming coordinate was deleted
-                if colour_now == 'r':
-                    self.num_red -= 1
-                else:
-                    self.num_blue -= 1
-                self.total_power -= power_now
-                
-                # Replace coordinate info now, with reverted coordinate info
-                self.grid_state[coordinate] = value
-              
-                # Update board information, since coordinate value reverted was updated
-                if colour_revert == 'r':
-                    self.num_red += 1
-                elif colour_revert == 'b':
-                    self.num_blue += 1
-                # ######## added this else statement
-                # else: # was an empty cell
-                #     if colour_now == 'r':
-                #         self.num_red -= 1
-                #     else:
-                #         self.num_blue -= 1
-                self.total_power += power_revert
-        self.turns -= 1
-
     # Function that takes an action (either spread or spawn), and applies the action to the board / grid_state, updating the board accordingly
     def apply_action(self, action: Action):
         match action: 
@@ -550,12 +463,13 @@ Current Heuristic (for heuristic_1):
         bad = []
 
         for action in actions:
-        ################## variable assignment ##################
+        ################## variable assignment before change ##################
             score = 0 # used to rank actions
             cell = action.cell
             from_cell = (int(cell.r), int(cell.q))
             colour = self.player_turn
-            changes = {}
+            init_red = self.num_red
+            init_blue = self.num_blue
 
             # action is spread
             if from_cell in self.grid_state:
@@ -563,39 +477,26 @@ Current Heuristic (for heuristic_1):
             # action is spawn
             else:
                 power = 0
-
-            init_red = self.num_red
-            init_blue = self.num_blue
-            print(f"******************************\ninitial grid:   ")
-            self.print_board_data
-
-            # create "changes" dictionary for undo_action
-            if isinstance(action, SpawnAction):
-            ################# look here! ###########
-                # what should the colour of empty cell be if i wanna put it in changes{} dict?
-                changes[from_cell] = ("", 0) # empty cell
-            else:
+            
+            ####### this is for setting up undo_action, we're not adding spawn action in changed{}
+            changed = {}
+            if isinstance(action, SpreadAction):
                 dir = action.direction
-                from_cell = (int(cell.r), int(cell.q))
                 dir = (int(dir.r), int(dir.q))
+                # add in dict if it's along the path of the spread
                 for i in range(power):
                     path_cell = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
                     path_cell = self.fix_tuple(path_cell)
-                ################# look here! ###########
-                    # what should the colour of empty cell be if i wanna put it in changes{} dict?
-                    if path_cell not in self.grid_state:
-                        changes[path_cell] = ("", 0) # empty cell
+                    if path_cell in self.grid_state:
+                        changed[path_cell] = self.grid_state[path_cell]
                     else:
-                        changes[path_cell] = self.grid_state[path_cell]
-            
+                        changed[path_cell] = {}
 
-        ################## variable assignment ended ##################
+            print(f"******************************\ninitial grid:")
+            self.print_board_data
 
+        ################## variable assignment after change ##################
             self.apply_action(action)
-            #tmp = deepcopy(self)
-            #tmp.apply_action(action)
-            
-            # getting the new grid and checking which cells have changed (form of a dictionary)
             print(f"applied action: {action}")
             self.print_board_data
 
@@ -609,7 +510,7 @@ Current Heuristic (for heuristic_1):
             else:
                 score = (new_blue - init_blue) + (init_red - new_red)
             
-
+        ################## end of variable assignment ##################
             if score > 0:
                 if isinstance(action, SpawnAction):
                     # checking each of the neighbour cells
@@ -617,12 +518,12 @@ Current Heuristic (for heuristic_1):
                     for dir in DIR.coord:
                         tmp_coord = (from_cell[0] + dir[0], from_cell[1] + dir[1])
                         if tmp_coord in self.grid_state:
-                            # neighbour is an enemy
+                            # bad if neighbour is an enemy
                             if (self.grid_state[tmp_coord])[0] != colour:
                                 bad.append(action)
                                 flag = 1
                                 break
-                            # neighbour is own 
+                            # neighbour is own, keep checking 
                             else:
                                 flag = 2
 
@@ -651,8 +552,8 @@ Current Heuristic (for heuristic_1):
                     # a spread action that kills enemy
                     if flag:
                         check = 0
+                        # check each cell that it will spread to
                         for i in range(power):
-                            # Location of coordinate spread position: make sure coordinate in torus structure 
                             spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
                             spread_coord = self.fix_tuple(spread_coord)
                             # if it spreads near enemy cells
@@ -665,20 +566,15 @@ Current Heuristic (for heuristic_1):
                             obvious.append(action)
 
 
-            # score won't be <= 0 if it's a spawn action
+            # note: score won't be <= 0 if it's a spawn action
             elif score == 0:
                 average.append(action)
-
+            # if score is < 0: usually means we are killing more own cells than enemy cells
             else:       
                 bad.append(action)
 
-            if isinstance(action, SpawnAction):
-                action_applied = "spawn"
-            else:
-                action_applied = "spread"
-
-            self.undo_action({"action": action_applied, "node_origin": (from_cell, (colour, power)), "changes": changes})
-
+            # undo action
+            self.undo_action(action, colour, power, init_red, init_blue, changed)
             print(f"undo_action:    ")
             self.print_board_data
 
@@ -694,7 +590,49 @@ Current Heuristic (for heuristic_1):
                 return random.choice(bad)
 
 
+    # Function that takes in a dictionary of changed nodes, "undos" the action on the current board
+    # Changed dictionary include the coordinate and their information before action was applied
+    def undo_action(self, action: Action, colour, power, init_r, init_b, changed):
+        from_cell = action.cell
+        coordinates = (int(from_cell.r), int(from_cell.q))
+        self.num_blue = init_b
+        self.num_red = init_r
+        self.turns -= 1
 
+        # spawn action
+        if isinstance(action, SpawnAction):
+            del self.grid_state[coordinates]
+            self.total_power -= 1
+        
+        # spread action
+        else:
+            cell, dir = action.cell, action.direction
+            from_cell = (int(cell.r), int(cell.q))
+            dir = (int(dir.r), int(dir.q))
+
+            # add the from_cell back into grid
+            self.grid_state[from_cell] = (colour, power)
+            self.total_power += power
+
+            # checking each of the cells that were changed after spreading (excludes the from_cell)
+            for key, value in changed.items():
+                # cell was empty
+                if value == {}:
+                    del self.grid_state[key]
+                    self.total_power -= 1
+                else:
+                    # this cell is killed after the action
+                    if value[1] == 6:
+                        self.grid_state[key] = changed[key]
+                        self.total_power += 6
+                    # cell already existed (not killed)
+                    else:
+                        lst = list(self.grid_state[key])
+                        lst[1] -= 1
+                        self.grid_state[key] = tuple(lst)
+                        self.total_power -= 1
+                        self.grid_state[key] = changed[key]
+                    
 
 
     # heuristic for node selection, returns best action out of all legal actions

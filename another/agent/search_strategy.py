@@ -245,14 +245,32 @@ class NODE:
         print(f"The number of wins of the node is {self.wins}")
         print(f"The number of playouts of the node is {self.playouts}")
 
+
+    # For debugging purposes: function that prints the fields of every NODE on the tree (Also counts the number of nodes, and prints the node depth) 
+    # AI assisted function
+    def print_whole_tree_node_data(self, depth = 0, counter = None):
+        if counter is None:
+            counter = {'count': 0}
+        
+        self.print_node_data(depth)
+        counter['count'] += 1
+        if self.children:
+            for child in self.children:
+                child.print_whole_tree_node_data(depth + 1, counter)
+
+        if depth == 0:
+            print(f"Total number of nodes in the tree: {counter['count']}")
+        
+        return counter['count']
+
+    # For debugging purposes: function that prints the fields of every child NODE
     @property
     def print_child_node_data(self):
-        print("\n#### child node data ####")
         count = 1
         for child in self.children:
             print(f"child {count} node data:")
             print(render_board(child.board.grid_state, ansi = True))
-            child.print_node_data
+            child.print_node_data()
             count += 1
 
     @property

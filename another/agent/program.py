@@ -78,9 +78,6 @@ class Agent:
             #child.print_node_data
             # same action as child, set root as child
             if child.action == action:
-                child.parent = None
-                child.action = None
-
                 # Rely on inbuild python memory recycling
 #                del self.mct.root.children
                 self.mct.root = child
@@ -94,14 +91,19 @@ class Agent:
         # Opponents move is not found in root.children
         if flag:
             print("\n\n\nAction not found in child node, new tree created \n")
-            #self.mct.root = self.mct.root.parent
-            # print("Action not found in child node")
-            previous = self.mct.root #previous root 
+            parent = self.mct.root
+            new_board = deepcopy(self.mct.root.board)
+            new_board.apply_action(action)
+            new_child = NODE(board = new_board, parent = parent, action = action, total = len(self.mct.root.board.get_legal_actions))
+            self.mct.root.children.append(new_child)
+            self.mct.root = new_child
+
+            #previous = self.mct.root #previous root 
 #            print("previous board is:")
 #            previous.board.print_board_data
 
-            previous.board.apply_action(action)
-            self.mct.root = NODE(board = deepcopy(previous.board), total = len(previous.board.get_legal_actions))
+            #previous.board.apply_action(action)
+            #self.mct.root = NODE(board = deepcopy(previous.board), total = len(previous.board.get_legal_actions))
             print(f"new root is {self.mct.root}")
-            del previous
+
 

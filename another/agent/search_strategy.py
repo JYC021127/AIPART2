@@ -590,7 +590,7 @@ Current Heuristic:
     '''
     # heuristic 1.0
     def heuristic(self, actions):
-        #obvious = []
+        obvious = []
         good = []
         average = []
         bad = []
@@ -670,6 +670,12 @@ Current Heuristic:
                             spread_coord = self.fix_tuple(spread_coord)
                             # if it spreads near enemy cells
                             if copy.check_enemy(spread_coord):
+                                tmp_power = copy.eval_power(spread_coord)
+
+                                # Action is obvious if action of spread is a high power coordinate, shortcircuit
+                                if tmp_power >= 3:
+                                    return action
+
                                 check = 1
                                 good.append(action)
                                 break
@@ -737,8 +743,8 @@ Current Heuristic:
         del copy
 
         # return the best action
-#        if len(obvious) != 0:
-#            return random.choice(obvious)
+        if len(obvious) != 0:
+            return random.choice(obvious)
         if len(good) != 0:
             return random.choice(good)
         elif len(average) != 0:

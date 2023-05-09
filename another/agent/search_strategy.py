@@ -623,7 +623,7 @@ Current Heuristic:
                 score = (new_red - init_red) + (init_blue - new_blue)
             else:
                 num_own_colour = new_blue
-                init_num_colour - init_blue
+                init_num_colour = init_blue
                 score = (new_blue - init_blue) + (init_red - new_red)
             
             # Positive Score: Spawning, Spread that kills enemies

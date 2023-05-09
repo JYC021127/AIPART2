@@ -468,6 +468,10 @@ Current Heuristic (for heuristic_1):
         init_blue = self.num_blue
         copy = deepcopy(self)
 
+
+#        test_grid = deepcopy(self) # Testing whether dictionaries are the same before and after
+#        test_grid.print_board_data
+
         for action in actions:
         ################## variable assignment before change ##################
             score = 0 # used to rank actions

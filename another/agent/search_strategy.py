@@ -90,7 +90,7 @@ class NODE:
         node.action = None
         node.total = 0
         count = 0
-
+  
         # While not game over, keep playing a move
         while not node.board.game_over and not node.board.too_much_adv and count < MAX_TURNS:
             actions = node.board.get_legal_actions
@@ -254,6 +254,8 @@ class BOARD:
             raise ValueError("Comparing different classes?")
         
         return (self.grid_state == other.grid_state) and (self.num_blue == other.num_blue) and (self.num_red == other.num_red) and (self.total_power == other.total_power) and (self.turns == other.turns)
+
+
     # Function that calculates all the legal moves a player can do (can be found by even vs odd of self.board.turns since red starts game first)
     '''
     O(n^2) generally, where n = 7 representing 7 by 7 grid, accessing dictionary is constant on average, appending to list is O(1) on average, with worst case O(n) 
@@ -292,6 +294,7 @@ class BOARD:
     # Changes dictionary include the coordinate and their information before action was applied
     # Note that node_origin cell is not stored inside the changes dictionary
     def undo_action(self, changes_dict: dict):
+
         # If the action made was spawn, delete the spawned cell and update the board accordingly
         if changes_dict["action"] == "spawn":
             spawned_cell = changes_dict["node_origin"][0] # coordinate of node_origin
@@ -310,7 +313,9 @@ class BOARD:
             
             # Dictionary of changes
             changes = changes_dict["changes"]
+
             # Store coordinate, (colour, power)
+            #before_spread_coord, before_spread_values = changes_dict["node_origin"]
             before_spread_coord = changes_dict["node_origin"][0]
             before_spread_values = changes_dict["node_origin"][1]
             
@@ -340,6 +345,7 @@ class BOARD:
                         self.num_blue -= 1
                     self.total_power -= 1
                     continue
+
                 # colour and power of reverted coordinate
                 # colour_revert, power_revert = value
                 colour_revert = value[0]
@@ -359,6 +365,7 @@ class BOARD:
                         self.num_blue += 1
                     self.total_power += 6
                     continue # Skip current for loop iteration
+
                 # colour and power of coordinate now (to be reverted), we know they are inside dictionary
                 colour_now = self.eval_colour(coordinate)
                 power_now = self.eval_power(coordinate)
@@ -380,6 +387,7 @@ class BOARD:
                     self.num_blue += 1
                 self.total_power += power_revert
         self.turns -= 1
+
 
     # Function that takes an action (either spread or spawn), and applies the action to the board / grid_state, updating the board accordingly
     # It returns a dictionary of changes applied to the cell if action_param specified
@@ -777,7 +785,7 @@ class BOARD:
                 score = (new_blue - init_blue) + (init_red - new_red)
            
             # Rank different actions in different lists
-
+ 
             # Positive: Spread action or spawn action that does more good than harm 
             if score > 0:
                 flag = 0
@@ -824,6 +832,7 @@ class BOARD:
                             bad.append(action)
                         else:
                             if self.turns < 5: # Avoid spawning next to enemies (lose automatically for start of game)
+                                self.undo_action(changes_dict)
                                 return action
                             else:
                                 good.append(action)
@@ -999,6 +1008,7 @@ class MCT:
         root = self.root
         
         while count < MAX_ITERATIONS: # Can include memory and time constraint in the while loop as well 
+
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
             random = 1
@@ -1022,6 +1032,5 @@ class MCT:
             count += 1
 
         action = root.best_final_action()
-
         return action
 

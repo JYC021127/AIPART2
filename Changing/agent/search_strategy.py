@@ -4,6 +4,9 @@
 '''
     avoid obviously bad moves, i.e. ones that kill yourself. R1 spread towards R6 kills both of them, same as spawning right next to enenmy
     Problem: Spawning right next to enemey still exists
+    
+
+    Should also spread when a large power node is in danger 
 '''
 
 
@@ -101,8 +104,12 @@ class NODE:
         while not node.board.game_over:
             actions = node.board.get_legal_actions
             #random_action = random.choice(actions)
-            random_action = node.board.heuristic_1(actions)
-            
+            #random_action = node.board.heuristic_1(actions)
+        
+
+            # Testing light heuristic 
+            random_action = node.board.light_heuristic(actions)
+
             #del actions # Apparently not needed
             node.board.apply_action(random_action)
            
@@ -752,7 +759,7 @@ class BOARD:
                             check = 1
                             break
 
-                    if not check and tmp_colour_power > 10 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 5:
+                    if not check and tmp_colour_power > 6 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 5:
                         good.append(action)
                     elif not check:
                         average.append(action)
@@ -796,98 +803,120 @@ class BOARD:
             if len(bad) != 0:
                 return random.choice(bad)
  
-
-
-
-
-    # heuristic for node selection, returns best action out of all legal actions
-    def heuristic(self, actions):
-        obvious = []
+    # Function that returns a guided random action (light weight compared to the other heuristic) 
+    # While turns < 5, we are gonna lay greedy
+    def light_heuristic(self, actions):
         good = []
         average = []
         bad = []
-        for action in actions:
-            flag = 0 # check if this action is already any of the obvious/good/bad action
-            colour = self.player_turn
-
-            enemy_killed = 0
-            own_killed = 0
-            modified_cells = [] # this list can be later used to check neighbours of modified cells
-
-            # spread action
-            if action is SpreadAction:
-                cell, dir = action.cell, action.direction
-                from_cell = (int(cell.r), int(cell.q))
-                dir = (int(dir.r), int(dir.q))
-                
-                # check each cell that it will spread to
-                for i in range((self.grid_state[from_cell])[1]):
-                    spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
-                    spread_coord = self.fix_tuple(spread_coord)
-                    modified_cells.append(spread_coord)
-
-                    if spread_coord in self.grid_state:
-                        # counts number of enemy eaten/killed and own killed
-                        if colour != self.eval_colour(spread_coord):
-                            enemy_killed += 1
-                            # cell will be empty if killed
-                            if (self.grid_state[spread_coord])[1] == 6:
-                                modified_cells.remove(spread_coord)
-                        else:
-                            if (self.grid_state[spread_coord])[1] == 6:
-                                own_killed += 1
-                                modified_cells.remove(spread_coord)
-
-            # OBVIOUS
-            # killing any enemy cell
-            if enemy_killed > own_killed:
-                obvious.append(action)
-                flag = 0
-                continue
-
-            # BAD
-            # eating yourself
-            # killing more own cells than enemy cells
-            if enemy_killed <= own_killed:
-                bad.append(action)
-                flag = 0
-                continue
-
-            
-            # spawn action
-            #if action is SpawnAction:
-                # BAD
-                # spawn next to opponent cell 
-                # (prioritise this before spawning next to own if neighbour has own and opponent cells)
-
-                # GOOD
-                # spawn in a line/group/next-to-own
-
-
-            # GOOD
-            # spread without eating any enemy node
-            # and number of own colour neighbour cells > enemy neighbour cells
-            
-
-
-            # AVERAGE
-            # spreading without eating any enemy node
-            # and number of own colour neighbour cells > enemy neighbour cells
-            if flag:
-                average.append(action)
-
-        # return the best action
-        if len(obvious) != 0:
-            return random.chois(obvious)
         
-        elif len(good) != 0:
+        # Not gonna use deepcopy for simulations since too expensive and doesn't really affect main branch of the tree
+
+        for action in actions:
+
+            # Initialize score and player_turn colour
+            colour = self.player_turn
+            score = 0
+       
+            # Get changes dict, and initial and new number of red and blue cells
+            init_red = self.num_red
+            init_blue = self.num_blue
+            
+            # Initial total power of the player_turn colour
+            initial_colour_total_power = self.colour_total_power(colour)
+
+            changes_dict = self.apply_action(action, action_param = "get_actions_dict")
+            
+            new_red = self.num_red
+            new_blue = self.num_blue
+
+            if colour == 'r':
+                num_own_colour = new_red
+                score = (new_red - init_red) + (init_blue - new_blue)
+            else:
+                num_own_colour = new_blue
+                score = (new_blue - init_blue) + (init_red - new_red)
+           
+            # Rank different actions in different lists
+
+            
+
+            # Positive: Spread action or spawn action that does more good than harm 
+            if score > 0:
+                flag = 0
+                
+                # Spawn action case: either random, next to enemy, or near own cell
+                if isinstance(action, SpawnAction):
+                    from_cell = action.cell
+                    coordinates = (int(from_cell.r), int(from_cell.q))
+
+                    # checking each of the neighbour cells
+                    # make sure we're not spawning right next to an enemy cell
+                    for dir in DIR.coord:
+                        tmp_coord = (coordinates[0] + dir[0], coordinates[1] + dir[1])
+                        if tmp_coord in self.grid_state:
+                            # neighbour is an enemy
+                            if self.eval_colour(tmp_coord) != colour:
+                                bad.append(action)
+                                flag = 1
+                                break
+                            # neighbour is own 
+                            else:
+                                flag = 2
+
+                    # spawning in an empty surrounding
+                    if flag == 0:
+                        average.append(action)
+                    # spawning next to own cell, with no enemy surrounding
+                    elif flag == 2:
+                        good.append(action)
+
+                # Spread is good if it kills enemy nodes, bad if not
+                elif isinstance(action, SpreadAction):
+                    # Initialize 
+                    cell, dir = action.cell, action.direction
+                    from_cell = (int(cell.r), int(cell.q))
+                    dir = (int(dir.r), int(dir.q))
+
+                    # Spreading is good if it kills enemy nodes, otherwise it is bad
+                    if colour == 'r':
+                        if new_blue - init_blue == 0:
+                            bad.append(action)
+                        else:
+                            good.append(action)
+                    else:
+                        if new_red - init_red == 0:
+                            bad.append(action)
+                        else:
+                            good.append(action)
+
+            # Score is 0, Spread does more harm than good (kill own power 6 cell)
+            elif score == 0:
+                bad.append(action)
+
+            else: 
+                # Good action if total power of colour now is at least as large than it previous was
+                if initial_colour_total_power <= self.colour_total_power(colour):
+                    good.append(action)
+                else:
+                    bad.append(action)
+            
+            # undo action to board (same time and memory)
+            self.undo_action(changes_dict)
+
+        
+        if len(good) != 0:
             return random.choice(good)
         
         elif len(average) != 0:
             return random.choice(average)
         
+        elif len(bad) != 0:
+                return random.choice(bad)
         else:
-            return random.choice(bad)
+            raise ValueError("This shouldn't run, the actions should have been in one of the lists")
+
+
 
 
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board

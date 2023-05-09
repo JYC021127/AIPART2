@@ -105,7 +105,10 @@ class NODE:
             #random_action = random.choice(actions)
             
             #uncomment this if we want to use heuristic
-            random_action = node.board.heuristic(actions)
+            #random_action = node.board.heuristic(actions)
+
+            # Testing light heuristic 
+            random_action = node.board.light_heuristic(actions)
             
             #del actions # Apparently not needed
             node.board.apply_action(random_action)
@@ -585,7 +588,7 @@ Current Heuristic:
     '''
     # heuristic 1.0
     def heuristic(self, actions):
-        obvious = []
+        #obvious = []
         good = []
         average = []
         bad = []
@@ -670,7 +673,8 @@ Current Heuristic:
                                 break
                         # Spreading in the middle of other enemies
                         if not check:
-                            obvious.append(action)
+                            return action
+                            #obvious.append(action)
 
             # score won't be <= 0 if it's a spawn action. The case includes: actions that don't change number of red and blue
             # This action involves spreading, whichh kills enemies and own cells (but killing own cells means killing own power 6)
@@ -731,9 +735,9 @@ Current Heuristic:
         del copy
 
         # return the best action
-        if len(obvious) != 0:
-            return random.choice(obvious)
-        elif len(good) != 0:
+#        if len(obvious) != 0:
+#            return random.choice(obvious)
+        if len(good) != 0:
             return random.choice(good)
         elif len(average) != 0:
             return random.choice(average)
@@ -744,7 +748,6 @@ Current Heuristic:
     # Function that returns a guided random action (light weight compared to the other heuristic) 
     # While turns < 5, we are gonna lay greedy
     def light_heuristic(self, actions):
-        obvious = []
         good = []
         average = []
         bad = []
@@ -793,9 +796,9 @@ Current Heuristic:
                     # make sure we're not spawning right next to an enemy cell
                     for dir in DIR.coord:
                         tmp_coord = (coordinates[0] + dir[0], coordinates[1] + dir[1])
-                        if tmp_coord in tmp.grid_state:
+                        if tmp_coord in self.grid_state:
                             # neighbour is an enemy
-                            if tmp.eval_colour(tmp_coord) != colour:
+                            if self.eval_colour(tmp_coord) != colour:
                                 bad.append(action)
                                 flag = 1
                                 break

@@ -666,12 +666,13 @@ class BOARD:
                     dir = action.direction
                     dir = (int(dir.r), int(dir.q))
                     flag = 1
-                    # # from_cell's power is 6 and there are enemies around it, we don't really want enemy to kill our big powers
-                    # if power == 6 and copy.check_enemy(from_cell):
-                    #     good.append(action)
-                    #     flag = 0
+                    # if it's taking too long to run, maybe get rid of this if
+                    # from_cell's power is 6 and there are enemies around it, we don't really want enemy to kill our big powers
+                    if power == 6 and copy.check_enemy(from_cell):
+                        good.append(action)
+                        flag = 0
                     # Spreading without killing ememy nodes (score > 0 since number of own colour nodes increased)
-                    if not flag:
+                    if flag:
                         if colour == 'r':
                             if new_blue - init_blue == 0:
                                 bad.append(action)

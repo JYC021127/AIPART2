@@ -10,7 +10,7 @@ from .search_strategy import *
 from copy import deepcopy
 
 # Planning to write a function in a different python file and just import it into this afterwards 
-MAX_ITERATIONS = 1000 
+MAX_ITERATIONS = 100 
 
 
 # This is the entry point for your game playing agent. Currently the agent
@@ -69,8 +69,8 @@ class Agent:
         self.update(action)
 
         # Print the whole tree: Checking whether this works atm
-        if self.mct.root is not None:
-            self.mct.root.print_whole_tree_node_data()
+#        if self.mct.root is not None:
+#            self.mct.root.print_whole_tree_node_data()
  
 
     # Function that updates root of the tree based on enemy action  

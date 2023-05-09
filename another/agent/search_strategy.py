@@ -13,7 +13,7 @@ from copy import deepcopy
 import random
 import time
 
-MAX_ITERATIONS = 200
+MAX_ITERATIONS = 100
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 
@@ -635,7 +635,7 @@ class BOARD:
                 init_num_colour = init_blue
                 score = (new_blue - init_blue) + (init_red - new_red)
             
-            # Positive Score: Spawning, Spread that kills enemies
+            # Positive Score: Spawning, Spread that kill enemies
             if score > 0:
                 if isinstance(action, SpawnAction):
                     # checking each of the neighbour cells
@@ -666,15 +666,20 @@ class BOARD:
                     dir = action.direction
                     dir = (int(dir.r), int(dir.q))
                     flag = 1
+                    # # from_cell's power is 6 and there are enemies around it, we don't really want enemy to kill our big powers
+                    # if power == 6 and copy.check_enemy(from_cell):
+                    #     good.append(action)
+                    #     flag = 0
                     # Spreading without killing ememy nodes (score > 0 since number of own colour nodes increased)
-                    if colour == 'r':
-                        if new_blue - init_blue == 0:
-                            bad.append(action)
-                            flag = 0
-                    else:
-                        if new_red - init_red == 0:
-                            bad.append(action)
-                            flag = 0
+                    if not flag:
+                        if colour == 'r':
+                            if new_blue - init_blue == 0:
+                                bad.append(action)
+                                flag = 0
+                        else:
+                            if new_red - init_red == 0:
+                                bad.append(action)
+                                flag = 0
 
                     # Spread action that kills enemy nodes (with and without consequences) 
                     if flag:

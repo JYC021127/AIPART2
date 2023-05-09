@@ -32,9 +32,7 @@ class NODE:
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
 
-         
-
-
+ 
     # Method that adds child node to self.children (list of children)
     '''
     O(1) generally, just adding an element into a list
@@ -49,31 +47,37 @@ class NODE:
         - Favour exploring regions that are promising for both colours: Spawning in clusters, spreading if opponent is reachable
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
     '''
+    ##### might need to check the complexity again
     def expand(self):
-
+        total = self.total
+        count = 0
         # Randomly selecting an action from a list of favourable / likely actions
         actions = self.board.get_legal_actions 
-        random_action = self.board.heuristic(actions)
-        
+
+        # will keep finding the best action if child already exists in children
+        while count < total:
+            random_action = self.board.heuristic(actions)
+
+            if self.child_exists(random_action):
+                actions.remove(random_action)
+
+            else:
+                # Create / Deepcopy original grid and apply the random action to the board
+                board = deepcopy(self.board)
+                board.apply_action(random_action)
+
+                # Initialize new child and add into into children list of self / parent.
+                child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
+
+                # Add child to self.children list
+                self.add_child(child)
+                # Return the child node (we need to simulate this node)
+                return child
+            
+            count += 1
         # del actions # Apparently this is not needed, but can be used 
 
 
-        # Create / Deepcopy original grid and apply the random action to the board
-        board = deepcopy(self.board)
-        board.apply_action(random_action)
-
-        # Initialize new child and add into into children list of self / parent.
-        
-        child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
-
-        # Add child to self.children list
-        self.add_child(child)
-        
-        # Return the child node (we need to simulate this node)
-        return child
-
-
-    
     # Function that simulates / rollout of the node and returns the colour of the winner
     '''
     O(n^2) + (depth of game) * O(n^2), deep copy + expand * depth of tree. There is no branching factor because it is a "stick" that is repeately deleted
@@ -145,7 +149,7 @@ class NODE:
     @property 
     def explored_enough(self):       
         # Explored enough, if 1/4 of of total branches are searched and more than 10 branches already searched
-        if len(self.children) >= (self.total / 5) and len(self.children) >= 20:
+        if len(self.children) >= (self.total / 5) and len(self.children) >= 30:
             return True
 
         # Explored enough, if every branch is explored at least once
@@ -195,6 +199,15 @@ class NODE:
         # Action applied to parent grid_state to get to child grid_state
         return best_child.action
 
+
+    # function that checks if an action already exists in children list
+    def child_exists(self, action):
+        for child in self.children:
+            if action == child.action:
+                return True
+        return False
+    
+
     # For debugging purposes: function that prints the fields of the NODE class
     def print_node_data(self, depth = 0):
         print("Printing Node data:")
@@ -239,7 +252,6 @@ class NODE:
 
 # Class representing information relating to the grid
 class BOARD:
-    
     def __init__(self, grid_state, num_blue = 0, num_red = 0, total_power = 0, turns = 0):
         self.grid_state = grid_state # Dictionary representing the board, coordinates : (colour, power)
         self.num_blue = num_blue # Number of blues on the board 

@@ -11,6 +11,8 @@ from .utils import render_board
 from math import *
 from copy import deepcopy
 import random
+import time
+
 
 MAX_ITERATIONS = 200
 MAX_POWER = 49  # Max total power of a game
@@ -49,9 +51,6 @@ class NODE:
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
     '''
     def expand(self):
-        ###########
-        # try sorting actions according to heuristic directly from the grid_State, if there is time -> save resources
-        ######
 
         # Randomly selecting an action from a list of favourable / likely actions
         actions = self.board.get_legal_actions 
@@ -992,7 +991,7 @@ Current Heuristic:
 
 
 class MCT:
-    def __init__(self, root: NODE):
+    def __init__(self, root: NODE): # Include time_remaining here possibly, make the number of iterations dependent on time, maybe current number of turns?
         self.root = root
         self.root.total = len(self.root.board.get_legal_actions)
 

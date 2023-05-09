@@ -298,14 +298,16 @@ class BOARD:
 
     # Function that takes an action (either spread or spawn), and applies the action to the board / grid_state, updating the board accordingly
     def apply_action(self, action: Action):
+        changed = {}
         match action: 
             case SpawnAction():
                 self.resolve_spawn_action(action)
             case SpreadAction():
-                self.resolve_spread_action(action)
+                self.resolve_spread_action(action, changed)
             case _:
                 raise ValueError("This isn't supposed to happen. The only 2 actions should be Spread and Spawn ")
         self.turns += 1
+        return changed
 
 
     # Function that takes an SpawnAction as input and updates the board accordingly
@@ -341,7 +343,7 @@ class BOARD:
     '''
     O(power), number of coordinates = power, where dictionary look up occurs for each of them, and fields are updated
     '''
-    def resolve_spread_action(self, action: SpreadAction):
+    def resolve_spread_action(self, action: SpreadAction, changed):
         # self.validate 
 
         # Setup: current colour turn, get hex position (internet seems to say we can use hexpos without modifying) and direction
@@ -364,10 +366,9 @@ class BOARD:
             # Location of coordinate spread position: make sure coordinate in torus structure 
             spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
             spread_coord = self.fix_tuple(spread_coord)
-
             # If coordinate to spread inside dictionary: delete node if power already 6, otherwise change colour and add one to original power 
             if spread_coord in self.grid_state:
-
+                changed[spread_coord] = self.grid_state[spread_coord]
                 # If spread_coord has a power 6 node, it will disappear. Update board fields accordingly
                 if (self.grid_state[spread_coord])[1] == 6:
                     if self.eval_colour(spread_coord) == 'r':
@@ -395,6 +396,7 @@ class BOARD:
 
             # Otherwise, coordinate to spread no currently occupied, so spawn a new node (total power doesn't change)
             else:
+                changed[spread_coord] = {}
                 self.grid_state[spread_coord] = (colour, 1)
                 if colour == 'r':
                     self.num_red += 1
@@ -461,29 +463,30 @@ Current Heuristic (for heuristic_1):
         good = []
         average = []
         bad = []
+        colour = self.player_turn
+        init_red = self.num_red
+        init_blue = self.num_blue
+        copy = deepcopy(self)
 
         for action in actions:
         ################## variable assignment before change ##################
             score = 0 # used to rank actions
             cell = action.cell
             from_cell = (int(cell.r), int(cell.q))
-            # the following variables will be used as parameters for undo_action()
-            colour = self.player_turn
-            init_red = self.num_red
-            init_blue = self.num_blue
-            power = self.eval_power(from_cell)
-            changed = self.undo_support(action)
+            power = copy.eval_power(from_cell)
+            #changed = self.undo_support(action)
 
-            print(f"******************************\ninitial grid:")
-            self.print_board_data
+            #print(f"******************************\ninitial grid:")
+            #copy.print_board_data
 
         ################## variable assignment after change ##################
-            self.apply_action(action)
-            print(f"applied action: {action}")
-            self.print_board_data
+            changed = copy.apply_action(action)
+            #print(f"changed: {changed}")
+            #print(f"applied action: {action}")
+            #copy.print_board_data
 
-            new_red = self.num_red
-            new_blue = self.num_blue
+            new_red = copy.num_red
+            new_blue = copy.num_blue
             flag = 0
 
             # the idea of how score is calculated is here...
@@ -499,9 +502,9 @@ Current Heuristic (for heuristic_1):
                     # make sure we're not spawning right next to an enemy cell
                     for dir in DIR.coord:
                         tmp_coord = (from_cell[0] + dir[0], from_cell[1] + dir[1])
-                        if tmp_coord in self.grid_state:
+                        if tmp_coord in copy.grid_state:
                             # bad if neighbour is an enemy
-                            if (self.grid_state[tmp_coord])[0] != colour:
+                            if (copy.grid_state[tmp_coord])[0] != colour:
                                 bad.append(action)
                                 flag = 1
                                 break
@@ -535,10 +538,10 @@ Current Heuristic (for heuristic_1):
                         check = 0
                         # check each cell that it will spread to
                         for i in range(power):
-                            spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
-                            spread_coord = self.fix_tuple(spread_coord)
+                            spread_coord = copy.add_tuple(from_cell, copy.mult_tuple(dir, i + 1))
+                            spread_coord = copy.fix_tuple(spread_coord)
                             # if it spreads near enemy cells
-                            if self.check_enemy(spread_coord):
+                            if copy.check_enemy(spread_coord):
                                 check = 1
                                 good.append(action)
                                 break
@@ -554,10 +557,10 @@ Current Heuristic (for heuristic_1):
                 bad.append(action)
 
             # undo action
-            self.undo_action(action, colour, power, init_red, init_blue, changed)
-            print(f"undo_action:    ")
-            self.print_board_data
-
+            copy.undo_action(action, colour, power, init_red, init_blue, changed)
+            #print(f"undo_action:    ")
+            #copy.print_board_data
+        del copy
         # return the best action
         if len(obvious) != 0:
             return random.choice(obvious)
@@ -838,7 +841,7 @@ class MCT:
         count = 0
         root = self.root
 
-        print("In the start, the data for the children of the root are:")
+        #print("In the start, the data for the children of the root are:")
 #        root.print_child_node_data
         
         while count < MAX_ITERATIONS: # Can include memory and time constraint in the while loop as well 
@@ -846,13 +849,13 @@ class MCT:
             node = root
             random = 1
             while not node.board.game_over and node.explored_enough:
-                print(f"tree traversed {random} times, it looks like this:")
+                #print(f"tree traversed {random} times, it looks like this:")
 #                print(render_board(node.board.grid_state, ansi = True))
                 random += 1
                 #node = node.children[0] # A random idea for checking
                 node = node.largest_ucb()
 
-            print(f"The chosen node looks like this:")
+            #print(f"The chosen node looks like this:")
 #            print(render_board(node.board.grid_state, ansi = True))
            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
@@ -882,5 +885,4 @@ class MCT:
         # Purely Testing ##################
 
         return action
-
 

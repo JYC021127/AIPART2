@@ -149,7 +149,7 @@ class NODE:
     @property 
     def explored_enough(self):       
         # Explored enough, if 1/4 of of total branches are searched and more than 10 branches already searched
-        if len(self.children) >= (self.total / 5) and len(self.children) >= 30:
+        if len(self.children) >= (self.total / 5) and len(self.children) >= 20:
             return True
 
         # Explored enough, if every branch is explored at least once

@@ -766,6 +766,8 @@ Current Heuristic:
         
         # Not gonna use deepcopy for simulations since too expensive and doesn't really affect main branch of the tree
 
+
+
         for action in actions:
 
             # Initialize score and player_turn colour
@@ -837,12 +839,18 @@ Current Heuristic:
                         if new_blue - init_blue == 0:
                             bad.append(action)
                         else:
-                            good.append(action)
+                            if self.turns < 4:
+                                return action
+                            else:
+                                good.append(action)
                     else:
                         if new_red - init_red == 0:
                             bad.append(action)
                         else:
-                            good.append(action)
+                            if self.turns < 4:
+                                return action
+                            else:
+                                good.append(action)
 
             # Score is 0, Spread does more harm than good (kill own power 6 cell)
             elif score == 0:

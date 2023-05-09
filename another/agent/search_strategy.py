@@ -674,7 +674,12 @@ Current Heuristic:
                             spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
                             spread_coord = self.fix_tuple(spread_coord)
                             # if it spreads near enemy cells
-                            if copy.check_enemy(spread_coord) and init_num_colour > 1:
+                            if copy.check_enemy(spread_coord):
+                                if init_num_colour == 1:
+                                    bad.append(action)
+                                    check = 1
+                                    break
+
                                 tmp_power = copy.eval_power(spread_coord)
                                 # Action is obvious if action of spread is a high power coordinate, shortcircuit
                                 if tmp_power >= 3:
@@ -765,8 +770,6 @@ Current Heuristic:
         bad = []
         
         # Not gonna use deepcopy for simulations since too expensive and doesn't really affect main branch of the tree
-
-
 
         for action in actions:
 

@@ -740,7 +740,123 @@ Current Heuristic:
         else:
             if len(bad) != 0:
                 return random.choice(bad)
+    
+    # Function that returns a guided random action (light weight compared to the other heuristic) 
+    # While turns < 5, we are gonna lay greedy
+    def light_heuristic(self, actions):
+        obvious = []
+        good = []
+        average = []
+        bad = []
+        
+        # Not gonna use deepcopy for simulations since too expensive and doesn't really affect main branch of the tree
 
+        for action in actions:
+
+            # Initialize score and player_turn colour
+            colour = self.player_turn
+            score = 0
+       
+            # Get changes dict, and initial and new number of red and blue cells
+            init_red = self.num_red
+            init_blue = self.num_blue
+            
+            # Initial total power of the player_turn colour
+            initial_colour_total_power = self.colour_total_power(colour)
+
+            changes_dict = self.apply_action(action, action_param = "get_actions_dict")
+            
+            new_red = self.num_red
+            new_blue = self.num_blue
+
+            if colour == 'r':
+                num_own_colour = new_red
+                score = (new_red - init_red) + (init_blue - new_blue)
+            else:
+                num_own_colour = new_blue
+                score = (new_blue - init_blue) + (init_red - new_red)
+           
+            # Rank different actions in different lists
+
+            
+
+            # Positive: Spread action or spawn action that does more good than harm 
+            if score > 0:
+                flag = 0
+                
+                # Spawn action case: either random, next to enemy, or near own cell
+                if isinstance(action, SpawnAction):
+                    from_cell = action.cell
+                    coordinates = (int(from_cell.r), int(from_cell.q))
+
+                    # checking each of the neighbour cells
+                    # make sure we're not spawning right next to an enemy cell
+                    for dir in DIR.coord:
+                        tmp_coord = (coordinates[0] + dir[0], coordinates[1] + dir[1])
+                        if tmp_coord in tmp.grid_state:
+                            # neighbour is an enemy
+                            if tmp.eval_colour(tmp_coord) != colour:
+                                bad.append(action)
+                                flag = 1
+                                break
+                            # neighbour is own 
+                            else:
+                                flag = 2
+
+                    # spawning in an empty surrounding
+                    if flag == 0:
+                        average.append(action)
+                    # spawning next to own cell, with no enemy surrounding
+                    elif flag == 2:
+                        good.append(action)
+
+                # Spread is good if it kills enemy nodes, bad if not
+                elif isinstance(action, SpreadAction):
+                    # Initialize 
+                    cell, dir = action.cell, action.direction
+                    from_cell = (int(cell.r), int(cell.q))
+                    dir = (int(dir.r), int(dir.q))
+
+                    # Spreading is good if it kills enemy nodes, otherwise it is bad
+                    if colour == 'r':
+                        if new_blue - init_blue == 0:
+                            bad.append(action)
+                        else:
+                            good.append(action)
+                    else:
+                        if new_red - init_red == 0:
+                            bad.append(action)
+                        else:
+                            good.append(action)
+
+            # Score is 0, Spread does more harm than good (kill own power 6 cell)
+            elif score == 0:
+                bad.append(action)
+
+            else: 
+                # Good action if total power of colour now is at least as large than it previous was
+                if initial_colour_total_power <= self.colour_total_power(colour):
+                    good.append(action)
+                else:
+                    bad.append(action)
+            
+            # undo action to board (same time and memory)
+            self.undo_action(changes_dict)
+
+        
+        if len(good) != 0:
+            return random.choice(good)
+        
+        elif len(average) != 0:
+            return random.choice(average)
+        
+        elif len(bad) != 0:
+                return random.choice(bad)
+        else:
+            raise ValueError("This shouldn't run, the actions should have been in one of the lists")
+
+    # Other things: obvious actions should be shortcircuited, since expand might come back to it, also make sure first 4 moves are greedy actions in the 
+    # Simulation to avoid spawning right next to opponent
 
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
     def eval_colour(self, coordinate):

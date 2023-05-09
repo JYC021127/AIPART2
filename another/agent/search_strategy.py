@@ -93,23 +93,11 @@ class NODE:
         node.total = 0
         count = 0
   
-        ###################################
-        # TO CHANGE / OPTIMIZE
-        # Add a condition to "shortcircuit" simulation if one colour is obviously going to win (perhaps even when |num_red - num_blue| > 10) -> reduce simulation time
-        # But we also need to add a new function, because the winning condition has changed
-        # Also make first 4 moves greedy, so that one doesn't spawn next to opponent
-
         # While not game over, keep playing a move
         while not node.board.game_over and not node.board.too_much_adv and count < MAX_TURNS:
             actions = node.board.get_legal_actions
 
-            # uncomment this if we want to use randoom
-            #random_action = random.choice(actions)
-            
-            #uncomment this if we want to use heuristic
-            #random_action = node.board.heuristic(actions)
-
-            # Testing light heuristic 
+            # Simulate with choices based on a light weight heuristic  
             random_action = node.board.light_heuristic(actions)
             
             #del actions # Apparently not needed
@@ -119,7 +107,7 @@ class NODE:
 
         # Evaluate winner, after game ending condition satisfied (escaped while loop)
         winner = node.board.winner 
-        #del node # Apparently not needed
+        #del node # May not be needed, python garbage collector can deal with it
 
         # Winning colour
         return winner
@@ -268,6 +256,8 @@ class BOARD:
             raise ValueError("Comparing different classes?")
         
         return (self.grid_state == other.grid_state) and (self.num_blue == other.num_blue) and (self.num_red == other.num_red) and (self.total_power == other.total_power) and (self.turns == other.turns)
+
+
     # Function that calculates all the legal moves a player can do (can be found by even vs odd of self.board.turns since red starts game first)
     '''
     O(n^2) generally, where n = 7 representing 7 by 7 grid, accessing dictionary is constant on average, appending to list is O(1) on average, with worst case O(n) 
@@ -301,11 +291,12 @@ class BOARD:
         # return list of legal actions
         return legal_actions
 
-# Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary
+    # Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary
     # format of changes_dict: {"action": "spread" / "spawn" , "node_origin": (from_cell coordinate, (colour, power)), "changes":{coordinates: (prev_colour, prev_power)}}
     # Changes dictionary include the coordinate and their information before action was applied
     # Note that node_origin cell is not stored inside the changes dictionary
     def undo_action(self, changes_dict: dict):
+
         # If the action made was spawn, delete the spawned cell and update the board accordingly
         if changes_dict["action"] == "spawn":
             spawned_cell = changes_dict["node_origin"][0] # coordinate of node_origin
@@ -324,7 +315,9 @@ class BOARD:
             
             # Dictionary of changes
             changes = changes_dict["changes"]
+
             # Store coordinate, (colour, power)
+            #before_spread_coord, before_spread_values = changes_dict["node_origin"]
             before_spread_coord = changes_dict["node_origin"][0]
             before_spread_values = changes_dict["node_origin"][1]
             
@@ -353,7 +346,9 @@ class BOARD:
                         self.num_blue -= 1
                     self.total_power -= 1
                     continue
+
                 # colour and power of reverted coordinate
+                #colour_revert, power_revert = value
                 colour_revert = value[0]
                 power_revert = value[1]
                 
@@ -371,6 +366,7 @@ class BOARD:
                         self.num_blue += 1
                     self.total_power += 6
                     continue # Skip current for loop iteration
+
                 # colour and power of coordinate now (to be reverted), we know they are inside dictionary
                 colour_now = self.eval_colour(coordinate)
                 power_now = self.eval_power(coordinate)
@@ -392,6 +388,7 @@ class BOARD:
                     self.num_blue += 1
                 self.total_power += power_revert
         self.turns -= 1
+
 
     # Function that takes an action (either spread or spawn), and applies the action to the board / grid_state, updating the board accordingly
     # It returns a dictionary of changes applied to the cell if action_param specified
@@ -576,7 +573,7 @@ class BOARD:
     '''
 Current Heuristic:
     Obvious
-    - spread action, kill enemy cells and has no enemy neighbour after spreading
+    - spread action, kill enemy cells and has no enemy neighbour after spreading, high power spread action 
 
     Good
     - spawn action next to own with no enemy neighbour
@@ -588,7 +585,7 @@ Current Heuristic:
 
     Bad
     - spawn action next to enemy
-    - spread action and doesn't kill any enemy cell
+    - spread action and doesn't kill any enemy cell and doesn't combine power
     - number of own killed > enemy killed   
     '''
     # heuristic 1.0
@@ -683,16 +680,14 @@ Current Heuristic:
                                 tmp_power = copy.eval_power(spread_coord)
                                 # Action is obvious if action of spread is a high power coordinate, shortcircuit
                                 if tmp_power >= 3:
-                                    #don't think we need to undo because we're only modifying copied node for heavy heuristic and returning the action directly
-                                    #copy.undo_action(changes_dict) 
                                     return action
                                 
                                 check = 1
                                 good.append(action)
                                 break
+
                         # Spreading in the middle of other enemies
                         if not check:
-                            #copy.undo_action(changes_dict)
                             return action
                             # obvious.append(action)
 
@@ -714,7 +709,7 @@ Current Heuristic:
                 if not check:
                     bad.append(action)
 
-            # Negative score (This creating greater power nodes)
+            # Negative score (Spreading creates greater power nodes)
             else:
                 tmp_colour_power = copy.colour_total_power(colour)
                 check = 0
@@ -741,20 +736,10 @@ Current Heuristic:
                 else:   # Shouldn't happen since spawn is never negative score
                     bad.append(action)
 
-                # Combining to create larger cells, without killing own 6 node
-#                tmp_colour_power = tmp.colour_total_power(colour)
-#                if tmp_colour_power > 10 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 5:
-#                    good.append(action)
-#
-#                # Killing own cells
-#                else:
-#                    bad.append(action)
-
             # undo action
             copy.undo_action(changes_dict)
         del copy
 
-        # return the best action
         # if len(obvious) != 0:
         #     return random.choice(obvious)
         if len(good) != 0:
@@ -793,16 +778,12 @@ Current Heuristic:
             new_blue = self.num_blue
 
             if colour == 'r':
-                # num_own_colour = new_red
                 score = (new_red - init_red) + (init_blue - new_blue)
             else:
-                # num_own_colour = new_blue
                 score = (new_blue - init_blue) + (init_red - new_red)
            
             # Rank different actions in different lists
-
-            
-
+ 
             # Positive: Spread action or spawn action that does more good than harm 
             if score > 0:
                 flag = 0
@@ -845,7 +826,7 @@ Current Heuristic:
                         if new_blue - init_blue == 0:
                             bad.append(action)
                         else:
-                            if self.turns < 4: # Avoid spawning next to enemies
+                            if self.turns < 5: # Avoid spawning next to enemies (lose automatically for start of game)
                                 self.undo_action(changes_dict)
                                 return action
                             else:
@@ -854,7 +835,7 @@ Current Heuristic:
                         if new_red - init_red == 0:
                             bad.append(action)
                         else:
-                            if self.turns < 4: 
+                            if self.turns < 5: 
                                 self.undo_action(changes_dict)
                                 return action
                             else:
@@ -886,8 +867,6 @@ Current Heuristic:
         else:
             raise ValueError("This shouldn't run, the actions should have been in one of the lists")
 
-    # Other things: obvious actions should be shortcircuited, since expand might come back to it, also make sure first 4 moves are greedy actions in the 
-    # Simulation to avoid spawning right next to opponent
 
     # Assuming coordinate is inside the board, returns the colour of the coordinate on the board
     def eval_colour(self, coordinate):
@@ -1023,16 +1002,15 @@ class MCT:
         count = 0
         root = self.root
 
-        #print("In the start, the data for the children of the root are:")
-#        root.print_child_node_data
         
         while count < MAX_ITERATIONS: # Can include memory and time constraint in the while loop as well 
+
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
             random = 1
             while not node.board.game_over and node.explored_enough:
                 #print(f"tree traversed {random} times, it looks like this:")
-#                print(render_board(node.board.grid_state, ansi = True))
+                #print(render_board(node.board.grid_state, ansi = True))
 
                 #random += 1
                 node = node.largest_ucb()
@@ -1041,9 +1019,7 @@ class MCT:
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.explored_enough:
                 node = node.expand() # Generates a child node that is most likely
-                # print("\n Expanded node: ")
-                # node.print_node_data()
-                # node.board.print_board_data
+
 
             # Simulation: Simulate newly expanded node or save winner of  the terminal state
             winner = node.simulate()
@@ -1055,14 +1031,5 @@ class MCT:
 
         action = root.best_final_action()
         
-        # Purely Testing ##################
-#        print("Printing the whole tree")
-#        root.print_whole_tee_node_data
-#        print("Finished printing the whole tree") 
-#
-#        root.children[0].print_child_node_data
-#        print(f"number of children is {len(root.children)}")
-        # Purely Testing ##################
-
         return action
 

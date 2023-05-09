@@ -78,27 +78,14 @@ class Agent:
                 child.parent = None
                 child.action = None
                 self.mct.root = child
-
-                # print("root.children:")
-                # print(self.mct.root.children)
                 flag = 0
-                #print("\n\n\nAction found in some child node, tree updated \n")
                 break
         
         # Opponent's move is not found in root.children
         if flag:
-            #print("\n\n\nAction not found in child node, new tree created \n")
-            previous = self.mct.root #previous root 
-            previous.board.apply_action(action)
+            previous = self.mct.root # previous root 
+            previous.board.apply_action(action)  # modify root since not using it anymore
             self.mct.root = NODE(board = deepcopy(previous.board), total = len(previous.board.get_legal_actions))
             del previous
-
-            # parent = self.mct.root
-            # new_board = deepcopy(self.mct.root.board)
-            # new_board.apply_action(action)
-            # new_child = NODE(board = new_board, parent = parent, action = action, total = len(self.mct.root.board.get_legal_actions))
-            # self.mct.root.children.append(new_child)
-            # self.mct.root = new_child
-            # print(f"new root is {self.mct.root}")
 
 

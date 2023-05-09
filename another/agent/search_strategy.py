@@ -96,9 +96,11 @@ class NODE:
         # TO CHANGE / OPTIMIZE
         # Add a condition to "shortcircuit" simulation if one colour is obviously going to win (perhaps even when |num_red - num_blue| > 10) -> reduce simulation time 
         # But we also need to add a new function, because the winning condition has changed
+        # Also make first 4 moves greedy, so that one doesn't spawn next to opponent
+
 
         # While not game over, keep playing a move (random at the moment: will change this to bias good moves eventually)
-        while not node.board.game_over:
+        while not node.board.game_over and not node.board.too_much_adv:
             actions = node.board.get_legal_actions
 
             # uncomment this if we want to use randoom
@@ -913,6 +915,17 @@ Current Heuristic:
             self.num_blue == 0
         ])
 
+    # Function that board class as input, and outputs True (winning colour quite obvious) or False (winner colour hard to determine)
+    @property 
+    def too_much_adv(self):
+
+        # return True if a particular colour has at least 10 more nodes or power than the other colour (pretty evident wo will win)
+        return any([
+            abs(self.num_red - self.num_blue) >= 10,
+            abs(self.colour_total_power('r') - self.colour_total_power('b')) >= 10 # This has searching whole dictionary complexity
+        ])
+
+
     # Function that takes in a grid_state (dictionary) as input and outputs the colour of the winner ("R" or "B") 
     # Make sure that this function is only run after game_end condition is satisfied. There are only 4 conditions of end_game that determine winner
     '''
@@ -921,7 +934,7 @@ Current Heuristic:
     @property
     def winner(self):
         # If board reached max number of turns (343 turns), the winner is the colour with the most power 
-        if self.turns >= MAX_TURNS:
+        if self.turns >= MAX_TURNS or not self.game_over:
             return self.max_power_colour()
         # Otherwise, empty board represents draw and the colour without nodes on the board is the LOSING colour 
         else:

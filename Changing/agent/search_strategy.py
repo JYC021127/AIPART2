@@ -3,6 +3,7 @@
 
 '''
     avoid obviously bad moves, i.e. ones that kill yourself. R1 spread towards R6 kills both of them, same as spawning right next to enenmy
+    Problem: Spawning right next to enemey still exists
 '''
 
 
@@ -51,9 +52,9 @@ class NODE:
     '''
     def expand(self):
         
-        ###########
-        # try sorting actions according to heuristic directly from the grid_State, if there is time -> save resources
-        ######
+        ###############################
+        # try sorting actions according to heuristic directly from the grid_State, rather than creating legal actions first, if there is time -> save resources
+        ###############################
 
         # Randomly selecting an action from a list of favourable / likely actions
         actions = self.board.get_legal_actions 
@@ -250,6 +251,12 @@ class BOARD:
         self.total_power = total_power # Total power of the board
         self.turns = turns # Total turns from empty board to current board 
     
+    # Compares equality of instances
+    def __eq__(self, other):
+        if not isinstance(other, BOARD):
+            raise ValueError("Comparing different classes?")
+        
+        return (self.grid_state == other.grid_state) and (self.num_blue == other.num_blue) and (self.num_red == other.num_red) and (self.total_power == other.total_power) and (self.turns == other.turns)
 
     # Function that calculates all the legal moves a player can do (can be found by even vs odd of self.board.turns since red starts game first)
     '''
@@ -288,6 +295,7 @@ class BOARD:
     # Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary
     # format of changes_dict: {"action": "spread" / "spawn" , "node_origin": (from_cell coordinate, (colour, power)), "changes":{coordinates: (prev_colour, prev_power)}}
     # Changes dictionary include the coordinate and their information before action was applied
+    # Note that node_origin cell is not stored inside the changes dictionary
 
     def undo_action(self, changes_dict: dict):
 
@@ -312,11 +320,13 @@ class BOARD:
             # Dictionary of changes
             changes = changes_dict["changes"]
 
-            # Store coordinate, (colour, power)
+            # Store coordinate, (colour, power) 
             before_spread_coord = changes_dict["node_origin"][0] 
             before_spread_values = changes_dict["node_origin"][1] 
             
-            colour = self.eval_colour(before_spread_coord)
+            # Get reverted colour and add cell to dictionary (revert spread_origin)
+            # colour = self.eval_colour(before_spread_coord)
+            colour = before_spread_values[0]
             self.grid_state[before_spread_coord] = before_spread_values
            
             # Update dictionary for spread origin node
@@ -328,6 +338,20 @@ class BOARD:
            
             # Update changed cells caused by spread: Delete old values, and update new values each time
             for coordinate, value in changes.items():
+
+                # If cell is reverted to empty, delete current cell (should be power 1) and update board accordingly 
+                if value is None:
+                    tmp_colour = self.eval_colour(coordinate)
+                    assert self.grid_state[coordinate][1] == 1, "Power of cell after spread is not 1?"
+                    del self.grid_state[coordinate]
+
+                    if tmp_colour == 'r':
+                        self.num_red -= 1
+                    else:
+                        self.num_blue -= 1
+                    self.total_power -= 1
+                    continue
+
                 # colour and power of reverted coordinate
                 colour_revert = value[0]
                 power_revert = value[1]
@@ -374,23 +398,38 @@ class BOARD:
         self.turns -= 1
 
     # Function that takes an action (either spread or spawn), and applies the action to the board / grid_state, updating the board accordingly 
-    def apply_action(self, action: Action): 
+    # It returns a dictionary of changes applied to the cell if action_param specified 
+    def apply_action(self, action: Action, action_param = None): 
+        # Initialize empty dictionary
+        changes_dict = {}
+
         match action: 
             case SpawnAction():
-                self.resolve_spawn_action(action)
+                if action_param is not None:
+                    changes_dict = self.resolve_spawn_action(action, param = action_param)
+                else:
+                    self.resolve_spawn_action(action)
+                    
             case SpreadAction():
-                self.resolve_spread_action(action)
+                if action_param is not None:
+                    changes_dict = self.resolve_spread_action(action, param = action_param)
+                else:
+                    self.resolve_spread_action(action)
             case _:
                 raise ValueError("This isn't supposed to happen. The only 2 actions should be Spread and Spawn ") 
         self.turns += 1
+
+
+        if action_param is not None:
+            return changes_dict
 
 
     # Function that takes an SpawnAction as input and updates the board accordingly
     '''
     O(1)
     '''
-    def resolve_spawn_action(self, action: SpawnAction):
-
+    def resolve_spawn_action(self, action: SpawnAction, param = None):
+        
         # Could add a self.validate to confirm everything is going as expected
           
         # Can't spawn when total power of board is already at max power
@@ -410,16 +449,26 @@ class BOARD:
             self.num_red += 1
         else:
             self.num_blue += 1
-
         self.total_power += 1
+
+        if param is not None:
+            dict_changes = {}
+            dict_changes["action"] = "spawn"
+            dict_changes["node_origin"] = (coordinates, None)
+            dict_changes["changes"] = {}
+            dict_changes["changes"][coordinates] = None
+            return dict_changes
 
 
     # Function that takes a SpreadAction as input and updates the board accordingly (torus structure, and tuple addition)
     '''
     O(power), number of coordinates = power, where dictionary look up occurs for each of them, and fields are updated
     '''
-    def resolve_spread_action(self, action: SpreadAction):
+    def resolve_spread_action(self, action: SpreadAction, param = None):
         # self.validate 
+        if param is not None:
+            dict_changes = {}
+            dict_changes["changes"] = {}
 
         # Setup: current colour turn, get hex position (internet seems to say we can use hexpos without modifying) and direction
         colour = self.player_turn
@@ -431,6 +480,10 @@ class BOARD:
         if (self.grid_state[from_cell])[0] != colour:
             raise ValueError("Spread origin node doesn't belong to the current colour")
         
+        # Store action type, and from_cell (coordinate, (colour, power))
+        if param is not None:
+            dict_changes["action"] = "spread"
+            dict_changes["node_origin"] = (from_cell, self.grid_state[from_cell])
 
         # Update the board_grid grid_state
         for i in range((self.grid_state[from_cell])[1]):
@@ -450,6 +503,11 @@ class BOARD:
                         self.num_blue -= 1
 
                     self.total_power -= 7 # power lost is 1 + 6
+                    
+                    # Add to be changed coordinate inside dict_changes if param not None, and delete the coordinate
+                    if param is not None:
+                        dict_changes["changes"][spread_coord] = self.grid_state[spread_coord]
+
                     del self.grid_state[spread_coord]
 
                 # Otherwise, spread action: original colour changes and original power += 1 
@@ -462,13 +520,20 @@ class BOARD:
                         else:
                             self.num_red -= 1
                             self.num_blue += 1
-                    # Friend node eaten means that original spread position num_node -= 1
+                        
+                    # Update dictionary if parameter specified
+                    if param is not None:
+                        dict_changes["changes"][spread_coord] = self.grid_state[spread_coord]
 
                     # Update num_blue and red before updating dictionary
                     self.grid_state[spread_coord] = (colour, self.grid_state[spread_coord][1] + 1)
 
             # Otherwise, coordinate to spread no currently occupied, so spawn a new node (total power doesn't change)
             else:
+                # Update changes dict if parameter specified
+                if param is not None:
+                    dict_changes["changes"][spread_coord] = None
+
                 self.grid_state[spread_coord] = (colour, 1)
                 if colour == 'r':
                     self.num_red += 1
@@ -476,12 +541,16 @@ class BOARD:
                     self.num_blue += 1
     
         # Delete cell where spreading originates and update board fields (number of nodes of the colour is reduced by 1)
+        # Note this is already stored inside dict_changes["node_origin"], so it is not stored inside dict_changes["changes"]
         if colour == 'r':
             self.num_red -= 1
         else:
             self.num_blue -= 1
         del self.grid_state[from_cell]
-        
+       
+        # Return dict changes if parameter isn't None
+        if param is not None:
+            return dict_changes
 
     
     # calculate the score of a board state depending on number of moves to end the game
@@ -550,7 +619,17 @@ class BOARD:
         good = []
         average = []
         bad = []
+
+        # Make a copy of node to avoid errors
+        tmp = deepcopy(self)
+
         for action in actions:
+
+
+            # TESTING ONLY 
+            print("Initial board is like this:")
+            tmp.print_board_data
+
             colour = self.player_turn
             score = 0 # used to rank actions that can eat at least 1 cell
             # positive score is pretty good
@@ -564,10 +643,16 @@ class BOARD:
             # TO CHANGE / OPTIMIZE 
             # try not to deepcopy here
             # write a undo action function that stores the old dictionary
+            # Can deepcopy if total power is small, otherwise use undo action to optimize?
             ################
+            
+            changes_dict = tmp.apply_action(action, action_param = "get_actions_dict")
 
-            tmp = deepcopy(self)
-            tmp.apply_action(action)
+            # TESTING ONLY
+            print("After applying action, board looks like this:")
+            tmp.print_board_data
+
+            # Initialize initial board, and "applied action" board 
             init_red = self.num_red
             new_red = tmp.num_red
             init_blue = self.num_blue
@@ -576,6 +661,7 @@ class BOARD:
             flag = 0
 
             # the idea of how score is calculated is here...
+            # Score is calculated based on change in blue and red after applying the action
             if colour == 'r':
                 score = (new_red - init_red) + (init_blue - new_blue)
             else:
@@ -641,7 +727,16 @@ class BOARD:
 
             else:       
                 bad.append(action)
-            del tmp
+
+            # Undo the action
+            tmp.undo_action(changes_dict)
+            
+            # TESTING ONLY 
+            print("After undoing the board, the board looks like this:")
+            tmp.print_board_data
+
+            print(f"The boards are the same: {self == tmp}")
+
 
         # return the best action
         if len(obvious) != 0:
@@ -838,6 +933,7 @@ class BOARD:
         # winner is blue if red <= blue for now
         else:
             return 'b'
+    
 
 
     # Function used for debugging purposes: prints the fields / attributes of the BOARD CLASS
@@ -871,12 +967,12 @@ class MCT:
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
 
-            random = 1
+            #random = 1
 
             while not node.board.game_over and node.explored_enough:
-                print(f"tree traversed {random} times, it looks like this:")
+                #print(f"tree traversed {random} times, it looks like this:")
 #                print(render_board(node.board.grid_state, ansi = True))
-                random += 1
+                #random += 1
              # node = node.children[0] # A random idea for checking
                 node = node.largest_ucb()
                 

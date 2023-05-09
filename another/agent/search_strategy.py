@@ -437,29 +437,6 @@ class BOARD:
         return False
 
 
-    # support function for undo_action (returns a dictionary of changed cells for SPREAD action only), we don't want the cell for SPAWN here!
-    def undo_support(self, action):
-        cell = action.cell
-        from_cell = (int(cell.r), int(cell.q))
-        power = self.eval_power(from_cell)
-
-        # this is for setting up changed dict
-        changed = {}
-        if isinstance(action, SpreadAction):
-            dir = action.direction
-            dir = (int(dir.r), int(dir.q))
-            # add in dict if it's along the path of the spread
-            for i in range(power):
-                path_cell = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
-                path_cell = self.fix_tuple(path_cell)
-                if path_cell in self.grid_state:
-                    changed[path_cell] = self.grid_state[path_cell]
-                else:
-                    changed[path_cell] = {}
-
-        return changed
-
-
     '''
 Current Heuristic (for heuristic_1):
     Obvious
@@ -618,9 +595,8 @@ Current Heuristic (for heuristic_1):
         
         # spread action
         else:
-            cell, dir = action.cell, action.direction
+            cell = action.cell
             from_cell = (int(cell.r), int(cell.q))
-            dir = (int(dir.r), int(dir.q))
 
             # add the from_cell back into grid
             self.grid_state[from_cell] = (colour, power)
@@ -641,6 +617,27 @@ Current Heuristic (for heuristic_1):
                     else:
                         self.total_power -= 1
                     
+    # support function for undo_action (returns a dictionary of changed cells for SPREAD action only), we don't want the cell for SPAWN here!
+    def undo_support(self, action):
+        cell = action.cell
+        from_cell = (int(cell.r), int(cell.q))
+        power = self.eval_power(from_cell)
+
+        # this is for setting up changed dict
+        changed = {}
+        if isinstance(action, SpreadAction):
+            dir = action.direction
+            dir = (int(dir.r), int(dir.q))
+            # add in dict if it's along the path of the spread
+            for i in range(power):
+                path_cell = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
+                path_cell = self.fix_tuple(path_cell)
+                if path_cell in self.grid_state:
+                    changed[path_cell] = self.grid_state[path_cell]
+                else:
+                    changed[path_cell] = {}
+
+        return changed
 
 
     # NOT USING THIS. heuristic for node selection, returns best action out of all legal actions

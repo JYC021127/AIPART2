@@ -626,17 +626,12 @@ class BOARD:
         for action in actions:
 
 
-            # TESTING ONLY 
-            print("Initial board is like this:")
-            tmp.print_board_data
+#            # TESTING ONLY 
+#            print("Initial board is like this:")
+#            tmp.print_board_data
 
             colour = self.player_turn
-            score = 0 # used to rank actions that can eat at least 1 cell
-            # positive score is pretty good
-            # score of 0 is average
-            # negative score is really bad
-            # for spawn actions, as long as it is not spawning right next to an enemy, it is good
-                # currently prioritising spread over spawn actions
+            score = 0 # Scoring system to rank actions: 0 average, negative is bad, positive is good 
 
             ##################
             # Changing this section right now
@@ -648,9 +643,9 @@ class BOARD:
             
             changes_dict = tmp.apply_action(action, action_param = "get_actions_dict")
 
-            # TESTING ONLY
-            print("After applying action, board looks like this:")
-            tmp.print_board_data
+#            # TESTING ONLY
+#            print("After applying action, board looks like this:")
+#            tmp.print_board_data
 
             # Initialize initial board, and "applied action" board 
             init_red = self.num_red
@@ -663,22 +658,26 @@ class BOARD:
             # the idea of how score is calculated is here...
             # Score is calculated based on change in blue and red after applying the action
             if colour == 'r':
+                num_own_colour = new_red
                 score = (new_red - init_red) + (init_blue - new_blue)
             else:
+                num_own_colour = new_blue
                 score = (new_blue - init_blue) + (init_red - new_red)
             
-
+            # Positive Score: Spawning, Spread that kills enemies
             if score > 0:
+
                 if isinstance(action, SpawnAction):
                     from_cell = action.cell
                     coordinates = (int(from_cell.r), int(from_cell.q))
+
                     # checking each of the neighbour cells
                     # make sure we're not spawning right next to an enemy cell
                     for dir in DIR.coord:
                         tmp_coord = (coordinates[0] + dir[0], coordinates[1] + dir[1])
                         if tmp_coord in tmp.grid_state:
                             # neighbour is an enemy
-                            if (tmp.grid_state[tmp_coord])[0] != colour:
+                            if tmp.eval_colour(tmp_coord) != colour:
                                 bad.append(action)
                                 flag = 1
                                 break
@@ -693,11 +692,14 @@ class BOARD:
                     elif flag == 2:
                         good.append(action)
 
+                # Spread Action
                 elif isinstance(action, SpreadAction):
                     cell, dir = action.cell, action.direction
                     from_cell = (int(cell.r), int(cell.q))
                     dir = (int(dir.r), int(dir.q))
                     flag = 1
+
+                    # Spreading without killing ememy nodes (score > 0 since number of own colour nodes increased)
                     if colour == 'r':
                         if new_blue - init_blue == 0:
                             bad.append(action)
@@ -706,36 +708,76 @@ class BOARD:
                         if new_red - init_red == 0:
                             bad.append(action)
                             flag = 0
-                    # a spread action that kills enemy node
+
+                    # Spread action that kills enemy nodes (with and without consequences) 
                     if flag:
                         check = 0
                         for i in range((self.grid_state[from_cell])[1]):
                             # Location of coordinate spread position: make sure coordinate in torus structure 
                             spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
                             spread_coord = self.fix_tuple(spread_coord)
+
                             # if it spreads near enemy cells
                             if tmp.check_enemy(spread_coord):
                                 check = 1
                                 good.append(action)
                                 break
+
+                        # Spreading in the middle of other enemies
                         if not check:
                             obvious.append(action)
 
-            # score won't be <= 0 if it's a spawn action
+            # score won't be <= 0 if it's a spawn action. The case includes: actions that don't change number of red and blue
+            # This action involves spreading, whichh kills enemies and own cells (but killing own cells means killing own power 6)
             elif score == 0:
-                average.append(action)
-
-            else:       
                 bad.append(action)
+                
+            # Negative score (This creating greater power nodes)
+            else:
+                tmp_colour_power = tmp.colour_total_power(colour)
+                check = 0
+                # spreading on itself and not eating any enemy cells
+                if isinstance(action, SpreadAction):
+
+                    cell, dir = action.cell, action.direction
+                    from_cell = (int(cell.r), int(cell.q))
+                    dir = (int(dir.r), int(dir.q))
+                    
+                    for i in range(self.grid_state[from_cell][1]):
+                        spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
+                        spread_coord = self.fix_tuple(spread_coord)
+                        # if it spreads near enemy cells
+                        if tmp.check_enemy(spread_coord):
+                            bad.append(action)
+                            check = 1
+                            break
+
+                    if not check and tmp_colour_power > 10 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 5:
+                        good.append(action)
+                    else:
+                        bad.append(action)
+
+                else: # Shouldn't happen since spawn is never negative score
+                    bad.append(action)
+
+
+#                # Combining to create larger cells, without killing own 6 node 
+#                tmp_colour_power = tmp.colour_total_power(colour)
+#                if tmp_colour_power > 10 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 5:
+#                    good.append(action)
+#
+#                # Killing own cells
+#                else:
+#                    bad.append(action)
 
             # Undo the action
             tmp.undo_action(changes_dict)
             
-            # TESTING ONLY 
-            print("After undoing the board, the board looks like this:")
-            tmp.print_board_data
-
-            print(f"The boards are the same: {self == tmp}")
+#            # TESTING ONLY 
+#            print("After undoing the board, the board looks like this:")
+#            tmp.print_board_data
+#
+#            print(f"The boards are the same: {self == tmp}")
 
 
         # return the best action
@@ -933,7 +975,17 @@ class BOARD:
         # winner is blue if red <= blue for now
         else:
             return 'b'
-    
+   
+    # Function that returns the total power of the colour (input)
+    def colour_total_power(self, colour):
+        count = 0 # Tally
+        
+        # Count colours
+        for info in self.grid_state.values():
+            if info[0] == colour:
+                count += info[1]
+        return count
+
 
 
     # Function used for debugging purposes: prints the fields / attributes of the BOARD CLASS

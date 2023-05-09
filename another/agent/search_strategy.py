@@ -56,6 +56,7 @@ class NODE:
         # Randomly selecting an action from a list of favourable / likely actions
         actions = self.board.get_legal_actions 
         random_action = self.board.heuristic(actions)
+        
         # del actions # Apparently this is not needed, but can be used 
 
 
@@ -90,17 +91,16 @@ class NODE:
         node.children = None
         node.action = None
         node.total = 0
-
-        
+        count = 0
+  
         ###################################
         # TO CHANGE / OPTIMIZE
-        # Add a condition to "shortcircuit" simulation if one colour is obviously going to win (perhaps even when |num_red - num_blue| > 10) -> reduce simulation time 
+        # Add a condition to "shortcircuit" simulation if one colour is obviously going to win (perhaps even when |num_red - num_blue| > 10) -> reduce simulation time
         # But we also need to add a new function, because the winning condition has changed
         # Also make first 4 moves greedy, so that one doesn't spawn next to opponent
 
-
-        # While not game over, keep playing a move (random at the moment: will change this to bias good moves eventually)
-        while not node.board.game_over and not node.board.too_much_adv:
+        # While not game over, keep playing a move
+        while not node.board.game_over and not node.board.too_much_adv and count < MAX_TURNS:
             actions = node.board.get_legal_actions
 
             # uncomment this if we want to use randoom
@@ -115,9 +115,11 @@ class NODE:
             #del actions # Apparently not needed
             node.board.apply_action(random_action)
 
+            count += 1
+
         # Evaluate winner, after game ending condition satisfied (escaped while loop)
         winner = node.board.winner 
-        # del node # Apparently not needed
+        #del node # Apparently not needed
 
         # Winning colour
         return winner
@@ -467,8 +469,9 @@ class BOARD:
         dir = (int(dir.r), int(dir.q))
 
         # Spread origin belings to turn colour
-        if (self.grid_state[from_cell])[0] != colour:
-            raise ValueError("Spread origin node doesn't belong to the current colour")
+        if from_cell in self.grid_state:
+            if (self.grid_state[from_cell])[0] != colour:
+                raise ValueError("Spread origin node doesn't belong to the current colour")
         
         # Store action type, and from_cell (coordinate, (colour, power))
         if param is not None:
@@ -616,9 +619,11 @@ Current Heuristic:
             # Score is calculated based on change in blue and red after applying the action
             if colour == 'r':
                 num_own_colour = new_red
+                init_num_colour = init_red
                 score = (new_red - init_red) + (init_blue - new_blue)
             else:
                 num_own_colour = new_blue
+                init_num_colour - init_blue
                 score = (new_blue - init_blue) + (init_red - new_red)
             
             # Positive Score: Spawning, Spread that kills enemies
@@ -669,20 +674,19 @@ Current Heuristic:
                             spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
                             spread_coord = self.fix_tuple(spread_coord)
                             # if it spreads near enemy cells
-                            if copy.check_enemy(spread_coord):
+                            if copy.check_enemy(spread_coord) and init_num_colour > 1:
                                 tmp_power = copy.eval_power(spread_coord)
-
                                 # Action is obvious if action of spread is a high power coordinate, shortcircuit
                                 if tmp_power >= 3:
                                     return action
-
+                                
                                 check = 1
                                 good.append(action)
                                 break
                         # Spreading in the middle of other enemies
                         if not check:
                             return action
-                            #obvious.append(action)
+                            # obvious.append(action)
 
             # score won't be <= 0 if it's a spawn action. The case includes: actions that don't change number of red and blue
             # This action involves spreading, whichh kills enemies and own cells (but killing own cells means killing own power 6)
@@ -743,8 +747,8 @@ Current Heuristic:
         del copy
 
         # return the best action
-        if len(obvious) != 0:
-            return random.choice(obvious)
+        # if len(obvious) != 0:
+        #     return random.choice(obvious)
         if len(good) != 0:
             return random.choice(good)
         elif len(average) != 0:
@@ -752,7 +756,7 @@ Current Heuristic:
         else:
             if len(bad) != 0:
                 return random.choice(bad)
-    
+
     # Function that returns a guided random action (light weight compared to the other heuristic) 
     # While turns < 5, we are gonna lay greedy
     def light_heuristic(self, actions):
@@ -905,7 +909,6 @@ Current Heuristic:
             return 'b'
    
 
-
     # Function that takes a grid_state (dictionary) as input and outputs True (game has ended) or False (game hasn't ended) 
     '''
     O(1), just accessing stuff
@@ -922,15 +925,14 @@ Current Heuristic:
         ])
 
     # Function that board class as input, and outputs True (winning colour quite obvious) or False (winner colour hard to determine)
-    @property 
+    @property
     def too_much_adv(self):
-
         # return True if a particular colour has at least 10 more nodes or power than the other colour (pretty evident wo will win)
         return any([
             abs(self.num_red - self.num_blue) >= 10,
             abs(self.colour_total_power('r') - self.colour_total_power('b')) >= 10 # This has searching whole dictionary complexity
         ])
-
+    
 
     # Function that takes in a grid_state (dictionary) as input and outputs the colour of the winner ("R" or "B") 
     # Make sure that this function is only run after game_end condition is satisfied. There are only 4 conditions of end_game that determine winner

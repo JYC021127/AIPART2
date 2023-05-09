@@ -1,6 +1,6 @@
 # Planning to write most of the functions here, not sure if this will work 
 
-
+# Need to create a ranking system for obvious actions, return the action that has the largest spread action (highest power spread action)
 
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
@@ -12,7 +12,7 @@ from math import *
 from copy import deepcopy
 import random
 
-MAX_ITERATIONS = 100
+MAX_ITERATIONS = 1000
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 

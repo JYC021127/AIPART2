@@ -678,6 +678,7 @@ Current Heuristic:
                                 tmp_power = copy.eval_power(spread_coord)
                                 # Action is obvious if action of spread is a high power coordinate, shortcircuit
                                 if tmp_power >= 3:
+                                    copy.undo_action(changes_dict)
                                     return action
                                 
                                 check = 1
@@ -685,6 +686,7 @@ Current Heuristic:
                                 break
                         # Spreading in the middle of other enemies
                         if not check:
+                            copy.undo_action(changes_dict)
                             return action
                             # obvious.append(action)
 
@@ -839,7 +841,8 @@ Current Heuristic:
                         if new_blue - init_blue == 0:
                             bad.append(action)
                         else:
-                            if self.turns < 4:
+                            if self.turns < 4: # Avoid spawning next to enemies
+                                self.undo_action(changes_dict)
                                 return action
                             else:
                                 good.append(action)
@@ -847,7 +850,8 @@ Current Heuristic:
                         if new_red - init_red == 0:
                             bad.append(action)
                         else:
-                            if self.turns < 4:
+                            if self.turns < 4: 
+                                self.undo_action(changes_dict)
                                 return action
                             else:
                                 good.append(action)

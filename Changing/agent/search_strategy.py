@@ -100,8 +100,8 @@ class NODE:
         # While not game over, keep playing a move (random at the moment: will change this to bias good moves eventually)
         while not node.board.game_over:
             actions = node.board.get_legal_actions
-            random_action = random.choice(actions)
-            #random_action = node.board.heuristic(actions)
+            #random_action = random.choice(actions)
+            random_action = node.board.heuristic_1(actions)
             
             #del actions # Apparently not needed
             node.board.apply_action(random_action)
@@ -754,7 +754,9 @@ class BOARD:
 
                     if not check and tmp_colour_power > 10 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 5:
                         good.append(action)
-                    else:
+                    elif not check:
+                        average.append(action)
+                    else: 
                         bad.append(action)
 
                 else: # Shouldn't happen since spawn is never negative score

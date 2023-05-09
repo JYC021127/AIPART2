@@ -12,7 +12,7 @@ from math import *
 from copy import deepcopy
 import random
 
-MAX_ITERATIONS = 1000
+MAX_ITERATIONS = 200
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 
@@ -593,7 +593,6 @@ Current Heuristic:
     '''
     # heuristic 1.0
     def heuristic(self, actions):
-        obvious = []
         good = []
         average = []
         bad = []
@@ -675,7 +674,8 @@ Current Heuristic:
                             spread_coord = self.fix_tuple(spread_coord)
                             # if it spreads near enemy cells
                             if copy.check_enemy(spread_coord):
-                                if init_num_colour == 1:
+                                if power == 1 and init_num_colour == 1:
+                                    # print(f"last step {action} should be in bad!!")
                                     bad.append(action)
                                     check = 1
                                     break
@@ -683,7 +683,8 @@ Current Heuristic:
                                 tmp_power = copy.eval_power(spread_coord)
                                 # Action is obvious if action of spread is a high power coordinate, shortcircuit
                                 if tmp_power >= 3:
-                                    copy.undo_action(changes_dict)
+                                    #don't think we need to undo because we're only modifying copied node for heavy heuristic and returning the action directly
+                                    #copy.undo_action(changes_dict) 
                                     return action
                                 
                                 check = 1
@@ -691,7 +692,7 @@ Current Heuristic:
                                 break
                         # Spreading in the middle of other enemies
                         if not check:
-                            copy.undo_action(changes_dict)
+                            #copy.undo_action(changes_dict)
                             return action
                             # obvious.append(action)
 
@@ -792,10 +793,10 @@ Current Heuristic:
             new_blue = self.num_blue
 
             if colour == 'r':
-                num_own_colour = new_red
+                # num_own_colour = new_red
                 score = (new_red - init_red) + (init_blue - new_blue)
             else:
-                num_own_colour = new_blue
+                # num_own_colour = new_blue
                 score = (new_blue - init_blue) + (init_red - new_red)
            
             # Rank different actions in different lists

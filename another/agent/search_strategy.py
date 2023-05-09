@@ -485,6 +485,10 @@ Current Heuristic (for heuristic_1):
         average = []
         bad = []
 
+
+#        test_grid = deepcopy(self) # Testing whether dictionaries are the same before and after
+#        test_grid.print_board_data
+
         for action in actions:
         ################## variable assignment before change ##################
             score = 0 # used to rank actions
@@ -496,6 +500,7 @@ Current Heuristic (for heuristic_1):
             init_blue = self.num_blue
             power = self.eval_power(from_cell)
             changed = self.undo_support(action)
+
 
             print(f"******************************\ninitial grid:")
             self.print_board_data
@@ -578,6 +583,10 @@ Current Heuristic (for heuristic_1):
 
             # undo action
             self.undo_action(action, colour, power, init_red, init_blue, changed)
+#
+#            # Testing whether before and after is the same
+#            print(f"Before and after is the same: {self == test_grid}")
+
             print(f"undo_action:    ")
             self.print_board_data
 

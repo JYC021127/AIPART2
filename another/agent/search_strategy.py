@@ -1,6 +1,7 @@
-# Planning to write most of the functions here, not sure if this will work 
 
 # Need to create a ranking system for obvious actions, return the action that has the largest spread action (highest power spread action)
+# Obvious moves: killing high power enenmy, spreading own high power cell if it is in danger
+# Right now its not spawning next to each other kinda
 
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
@@ -47,35 +48,64 @@ class NODE:
         - Favour exploring regions that are promising for both colours: Spawning in clusters, spreading if opponent is reachable
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
     '''
-    ##### might need to check the complexity again
+#    ##### might need to check the complexity again
+#    #### Oh lol, when did u change this. I thought we were only expanding one child each time haha, there's no point using total then here
+#    ### If u use this, limiting the branching factor won't work. Did u want to expand multiple nodes at once?
+#    def expand(self):
+#        total = self.total 
+#        count = 0
+#
+#        # Randomly selecting an action from a list of favourable / likely actions
+#        actions = self.board.get_legal_actions 
+#
+#        # will keep finding the best action if child already exists in children
+#        while count < total:
+#            random_action = self.board.heuristic(actions)
+#
+#            if self.child_exists(random_action):
+#                print("This shouldn't be run I think")
+#                actions.remove(random_action)
+#
+#            else:
+#                # Create / Deepcopy original grid and apply the random action to the board
+#                board = deepcopy(self.board)
+#                board.apply_action(random_action)
+#
+#                # Initialize new child and add into into children list of self / parent.
+#                child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
+#
+#                # Add child to self.children list
+#                self.add_child(child)
+#                # Return the child node (we need to simulate this node)
+#                return child
+#            
+#            count += 1
+#        # del actions # Apparently this is not needed, but can be used 
+
+
     def expand(self):
-        total = self.total
-        count = 0
+        
         # Randomly selecting an action from a list of favourable / likely actions
         actions = self.board.get_legal_actions 
-
-        # will keep finding the best action if child already exists in children
-        while count < total:
-            random_action = self.board.heuristic(actions)
-
-            if self.child_exists(random_action):
-                actions.remove(random_action)
-
-            else:
-                # Create / Deepcopy original grid and apply the random action to the board
-                board = deepcopy(self.board)
-                board.apply_action(random_action)
-
-                # Initialize new child and add into into children list of self / parent.
-                child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
-
-                # Add child to self.children list
-                self.add_child(child)
-                # Return the child node (we need to simulate this node)
-                return child
-            
-            count += 1
+        random_action = self.board.heuristic(actions)
         # del actions # Apparently this is not needed, but can be used 
+        
+        while self.child_exists(random_action):
+            actions.remove(random_action)
+            random_action = self.board.heuristic(actions) # might need to create a list of valid actions already searched?
+
+        # Create / Deepcopy original grid and apply the random action to the board
+        board = deepcopy(self.board)
+        board.apply_action(random_action)
+
+        # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
+        child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
+
+        # Add child to self.children list
+        self.add_child(child)
+        
+        # Return the child node (we need to simulate this node)
+        return child
 
 
     # Function that simulates / rollout of the node and returns the colour of the winner
@@ -204,6 +234,17 @@ class NODE:
     def child_exists(self, action):
         for child in self.children:
             if action == child.action:
+#                print(f"\n The action is {action} ")
+#                print("self data:")
+#                self.board.print_board_data
+                
+#                print("self, after applying action")
+#                tmp = deepcopy(self.board)
+#                tmp.apply_action(action)
+#                tmp.print_board_data
+#
+#                print("child data:")
+#                child.board.print_board_data
                 return True
         return False
     
@@ -648,15 +689,16 @@ class BOARD:
                             if copy.eval_colour(tmp_coord) != colour:
                                 bad.append(action)
                                 flag = 1
+                                break
+
                             # neighbour is own, keep checking 
                             else:
                                 flag = 2
-                        if flag == 1:
-                            break
 
                     # spawning in an empty surrounding
                     if flag == 0:
                         average.append(action)
+
                     # spawning next to own cell, with no enemy surrounding
                     elif flag == 2:
                         good.append(action)
@@ -668,9 +710,12 @@ class BOARD:
                     flag = 1
                     # if it's taking too long to run, maybe get rid of this if
                     # from_cell's power is 6 and there are enemies around it, we don't really want enemy to kill our big powers
-                    if power == 6 and copy.check_enemy(from_cell):
-                        good.append(action)
-                        flag = 0
+######                    # THis is acting wierd? is it, its causing us to spread to empty spaces I think 
+                    if power >= 3 and copy.check_enemy(from_cell):
+                        return action
+#                        good.append(action)
+#                        flag = 0
+
                     # Spreading without killing ememy nodes (score > 0 since number of own colour nodes increased)
                     if flag:
                         if colour == 'r':
@@ -690,6 +735,7 @@ class BOARD:
                             # Location of coordinate spread position: make sure coordinate in torus structure
                             spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
                             spread_coord = self.fix_tuple(spread_coord)
+
                             # if it spreads near enemy cells
                             if copy.check_enemy(spread_coord) and not check:
                                 tmp_power = copy.eval_power(spread_coord)
@@ -723,8 +769,10 @@ class BOARD:
                         dir = (int(dir.r), int(dir.q))
                         tmp_coord = (from_cell[0] + dir[0], from_cell[1] + dir[1])
                         tmp_coord = self.fix_tuple(tmp_coord)
-                        # if there are enemy around the cell right now and moving towards a safe cell
-                        if copy.check_enemy(from_cell) and not copy.check_enemy(tmp_coord):
+
+                        # if there are enemy around the cell right now and moving towards a safe cell, performance is a little wierd. When simulations
+                        # are run, it seems like cells just spread randomly, if initial position is dangerous, and safter after moving   
+                        if self.check_enemy(from_cell) and not copy.check_enemy(tmp_coord): 
                             average.append(action)
                             check = 1
 
@@ -748,7 +796,7 @@ class BOARD:
                             check = 1
                             break
                     
-                    if not check and tmp_colour_power > 10 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 5:
+                    if not check and tmp_colour_power > 6 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 4:
                         good.append(action)
                     elif not check:
                         average.append(action)
@@ -1030,17 +1078,21 @@ class MCT:
 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
-            random = 1
+#            random = 1
             while not node.board.game_over and node.explored_enough:
-                #print(f"tree traversed {random} times, it looks like this:")
-                #print(render_board(node.board.grid_state, ansi = True))
-                #random += 1
+#                print(f"tree traversed {random} times, it looks like this:")
+#                print(render_board(node.board.grid_state, ansi = True))
+#                random += 1
                 node = node.largest_ucb()
 
            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.explored_enough:
+#                print(f"I was here, node is: {node}")
+#                print(render_board(node.board.grid_state, ansi = True))
+#                node.print_node_data
                 node = node.expand() # Generates a child node that is most likely
+#                print(f"afterwards, node is: {node}")
 
             # Simulation: Simulate newly expanded node or save winner of  the terminal state
             winner = node.simulate()

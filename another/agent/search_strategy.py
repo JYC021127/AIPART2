@@ -18,7 +18,7 @@ import time
 
 MAX_ITERATIONS = 100
 MAX_POWER = 49  # Max total power of a game
-MAX_TURNS = 343 # Max total turns in a game
+MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 
 class DIR:
     coord = [(0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1), (1, 0)]
@@ -50,7 +50,6 @@ class NODE:
         - Favour exploring regions that are promising for both colours: Spawning in clusters, spreading if opponent is reachable
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
     '''
-#    ##### might need to check the complexity again
     def expand(self):
         
         # Randomly selecting an action from a list of favourable / likely actions
@@ -170,7 +169,7 @@ class NODE:
             return float('inf')
         else:
             value = self.wins/self.playouts
-            return value + c * sqrt(log(self.parent.playouts)/self.playouts) # + self.board.board_score()/(self.playouts * 5)
+            return value + c * sqrt(log(self.parent.playouts)/self.playouts)# + self.board.board_score()/(self.playouts * 5)
     
 
 
@@ -586,8 +585,7 @@ class BOARD:
     '''
     Current Heuristic:
     Obvious
-    - spread action, kill enemy cells and has no enemy neighbour after spreading
-    - high power spread action 
+    - spread action, kill enemy cells and has no enemy neighbour after spreading, high power spread action 
 
     Good
     - spawn action next to own with no enemy neighbour
@@ -660,12 +658,10 @@ class BOARD:
 
                     # spawning in an empty surrounding
                     if flag == 0:
-                        #print(f"{from_cell} has empty surrounding, average")
                         average.append(action)
 
                     # spawning next to own cell, with no enemy surrounding
                     elif flag == 2:
-                        #print(f"{from_cell} has own surrounding, good")
                         good.append(action)
 
                 # Spread Action
@@ -703,18 +699,20 @@ class BOARD:
                                 check = 1
                                 break
                                 
-                        # there's only one own cell with power 1 left on the board and it spreads next to enemy cells
-                        if check and power == 1 and init_num_colour == 1:
-                            bad.append(action)
-                        
-                        # If can kill someone with a larger power, return the action to explore
-                        elif check:
-                            if copy.eval_power(spread_coord) > power:   
-                                return action
-
                         # Spreading that results in no neighbour enemies
                         if not check:
                             return action
+                        
+                        # there's only one own cell with power 1 left on the board and it spreads next to enemy cells
+                        if check and power == 1 and init_num_colour == 1:
+                            bad.append(action)
+                                
+                        else:
+                            # If can kill someone with a larger power, return the action to explore
+                            if copy.eval_power(spread_coord) > power:
+                                return action 
+                              
+                            good.append(action)
 
             # score won't be <= 0 if it's a spawn action. The case includes: actions that don't change number of red and blue
             # This action involves spreading, whichh kills enemies and own cells (but killing own cells means killing own power 6)
@@ -780,6 +778,7 @@ class BOARD:
         # Not gonna use deepcopy for simulations since too expensive and doesn't really affect main branch of the tree
 
         for action in actions:
+
             # Initialize score and player_turn colour
             colour = self.player_turn
             score = 0
@@ -838,18 +837,18 @@ class BOARD:
                     elif flag == 2:
                         good.append(action)
 	
-######## Don't knwo whether this version is better or not
-#                    if flag == 0:
-#                        if initial_total_power > 20:
-#                           bad.append(action)
-#                        else:
-#                            average.append(action)
-#                    # spawning next to own cell, with no enemy surrounding
-#                    elif flag == 2:
-#                        if initial_total_power > 20:
-#                            average.append(action)
-#                        else:
-#                            good.append(action)
+# ####### Don't knwo whether this version is better or not
+#                     if flag == 0:
+#                         if initial_total_power > 20:
+#                            bad.append(action)
+#                         else:
+#                             average.append(action)
+#                     # spawning next to own cell, with no enemy surrounding
+#                     elif flag == 2:
+#                         if initial_total_power > 20:
+#                             average.append(action)
+#                         else:
+#                             good.append(action)
 
                 # Spread is good if it kills enemy nodes, bad if not
                 elif isinstance(action, SpreadAction):
@@ -1060,13 +1059,21 @@ class MCT:
 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
+#            random = 1
             while not node.board.game_over and node.explored_enough:
+#                print(f"tree traversed {random} times, it looks like this:")
+#                print(render_board(node.board.grid_state, ansi = True))
+#                random += 1
                 node = node.largest_ucb()
 
            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.explored_enough:
+#                print(f"I was here, node is: {node}")
+#                print(render_board(node.board.grid_state, ansi = True))
+#                node.print_node_data
                 node = node.expand() # Generates a child node that is most likely
+#                print(f"afterwards, node is: {node}")
 
             # Simulation: Simulate newly expanded node or save winner of  the terminal state
             winner = node.simulate()

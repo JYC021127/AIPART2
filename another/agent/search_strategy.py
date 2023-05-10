@@ -1,6 +1,7 @@
-# Planning to write most of the functions here, not sure if this will work 
 
 # Need to create a ranking system for obvious actions, return the action that has the largest spread action (highest power spread action)
+# Obvious moves: killing high power enenmy, spreading own high power cell if it is in danger
+# Right now its not spawning next to each other kinda
 
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
@@ -48,9 +49,12 @@ class NODE:
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
     '''
     ##### might need to check the complexity again
+    #### Oh lol, when did u change this. I thought we were only expanding one child each time haha, there's no point using total then here
+    ### If u use this, limiting the branching factor won't work. Did u want to expand multiple nodes at once?
     def expand(self):
-        total = self.total
+        total = self.total 
         count = 0
+
         # Randomly selecting an action from a list of favourable / likely actions
         actions = self.board.get_legal_actions 
 
@@ -59,6 +63,7 @@ class NODE:
             random_action = self.board.heuristic(actions)
 
             if self.child_exists(random_action):
+#                print("This shouldn't be run I think")
                 actions.remove(random_action)
 
             else:
@@ -204,6 +209,17 @@ class NODE:
     def child_exists(self, action):
         for child in self.children:
             if action == child.action:
+#                print(f"\n The action is {action} ")
+#                print("self data:")
+#                self.board.print_board_data
+                
+#                print("self, after applying action")
+#                tmp = deepcopy(self.board)
+#                tmp.apply_action(action)
+#                tmp.print_board_data
+#
+#                print("child data:")
+#                child.board.print_board_data
                 return True
         return False
     
@@ -648,15 +664,16 @@ class BOARD:
                             if copy.eval_colour(tmp_coord) != colour:
                                 bad.append(action)
                                 flag = 1
+                                break
+
                             # neighbour is own, keep checking 
                             else:
                                 flag = 2
-                        if flag == 1:
-                            break
 
                     # spawning in an empty surrounding
                     if flag == 0:
                         average.append(action)
+
                     # spawning next to own cell, with no enemy surrounding
                     elif flag == 2:
                         good.append(action)
@@ -668,9 +685,11 @@ class BOARD:
                     flag = 1
                     # if it's taking too long to run, maybe get rid of this if
                     # from_cell's power is 6 and there are enemies around it, we don't really want enemy to kill our big powers
+######                    # THis is acting wierd? is it, its causing us to spread to empty spaces I think 
                     if power == 6 and copy.check_enemy(from_cell):
                         good.append(action)
                         flag = 0
+
                     # Spreading without killing ememy nodes (score > 0 since number of own colour nodes increased)
                     if flag:
                         if colour == 'r':
@@ -690,6 +709,7 @@ class BOARD:
                             # Location of coordinate spread position: make sure coordinate in torus structure
                             spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
                             spread_coord = self.fix_tuple(spread_coord)
+
                             # if it spreads near enemy cells
                             if copy.check_enemy(spread_coord) and not check:
                                 tmp_power = copy.eval_power(spread_coord)
@@ -722,8 +742,11 @@ class BOARD:
                         dir = action.direction
                         dir = (int(dir.r), int(dir.q))
                         tmp_coord = (from_cell[0] + dir[0], from_cell[1] + dir[1])
-                        # if there are enemy around the cell right now and moving towards a safe cell
-                        if copy.check_enemy(from_cell) and not copy.check_enemy(tmp_coord):
+                        tmp_coord = self.fix_tuple(tmp_coord)
+
+                        # if there are enemy around the cell right now and moving towards a safe cell, performance is a little wierd. When simulations
+                        # are run, it seems like cells just spread randomly, if initial position is dangerous, and safter after moving   
+                        if self.check_enemy(from_cell) and not copy.check_enemy(tmp_coord): 
                             average.append(action)
                             check = 1
 
@@ -747,7 +770,7 @@ class BOARD:
                             check = 1
                             break
                     
-                    if not check and tmp_colour_power > 10 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 5:
+                    if not check and tmp_colour_power > 6 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 4:
                         good.append(action)
                     elif not check:
                         average.append(action)

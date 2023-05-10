@@ -710,7 +710,7 @@ class BOARD:
                         # If can kill someone with a larger power, return the action to explore
                         elif check:
                             if copy.eval_power(spread_coord) > power:   
-                                good.append(action)
+                                return action
 
                         # Spreading that results in no neighbour enemies
                         if not check:

@@ -110,6 +110,7 @@ class NODE:
         # Return the child node (we need to simulate this node)
         return child
 
+
     # Function that "cleans" the actions list so that all actions are non-expanded nodes (avoids running heuristic too many times)
     # AI assisted function (more concise): actions list where action is not any of the child.action in self.children
     def clean_actions(self, actions):
@@ -131,10 +132,9 @@ class NODE:
         node.children = None
         node.action = None
         node.total = 0
-        count = 0
   
         # While not game over, keep playing a move
-        while not node.board.game_over and not node.board.too_much_adv and count < MAX_TURNS:
+        while not node.board.game_over and not node.board.too_much_adv:
             actions = node.board.get_legal_actions
 
             # Simulate with choices based on a light weight heuristic  
@@ -142,8 +142,6 @@ class NODE:
             
             #del actions # Apparently not needed
             node.board.apply_action(random_action)
-
-            count += 1
 
         # Evaluate winner, after game ending condition satisfied (escaped while loop)
         winner = node.board.winner 
@@ -242,17 +240,6 @@ class NODE:
     def child_exists(self, action):
         for child in self.children:
             if action == child.action:
-#                print(f"\n The action is {action} ")
-#                print("self data:")
-#                self.board.print_board_data
-                
-#                print("self, after applying action")
-#                tmp = deepcopy(self.board)
-#                tmp.apply_action(action)
-#                tmp.print_board_data
-#
-#                print("child data:")
-#                child.board.print_board_data
                 return True
         return False
     
@@ -618,8 +605,7 @@ class BOARD:
 
 
     # function that returns if there's any enemy nodes around given coord
-    def check_enemy(self, coord: tuple):
-        colour = self.player_turn
+    def check_enemy(self, coord: tuple, colour):
         # check each direction
         for dir in DIR.coord:
             tmp_coord = (coord[0] + dir[0], coord[1] + dir[1])
@@ -658,9 +644,12 @@ class BOARD:
         colour = self.player_turn
         init_red = self.num_red
         init_blue = self.num_blue
+        highestpower_cell = self.largest_power_cell(colour) # cell with highest power for that player
         copy = deepcopy(self)
-
+        # print("\n***********start of heuristic")
+        # print(f"board is {render_board(self.grid_state, ansi = True)}")
         for action in actions:
+            #print(f"action is {action}")
             score = 0 # used to rank actions
             cell = action.cell
             from_cell = (int(cell.r), int(cell.q))
@@ -692,9 +681,10 @@ class BOARD:
                     for dir in DIR.coord:
                         tmp_coord = (from_cell[0] + dir[0], from_cell[1] + dir[1])
                         tmp_coord = self.fix_tuple(tmp_coord)
-                        if tmp_coord in self.grid_state:
+                        if tmp_coord in copy.grid_state:
                             # neighbour is an enemy
-                            if self.eval_colour(tmp_coord) != colour:
+                            if copy.eval_colour(tmp_coord) != colour:
+                                #print(f"{tmp_coord} is neighbour enemy cell, can't spawn")
                                 bad.append(action)
                                 flag = 1
                                 break
@@ -705,10 +695,12 @@ class BOARD:
 
                     # spawning in an empty surrounding
                     if flag == 0:
+                        #print(f"{from_cell} has empty surrounding, average")
                         average.append(action)
 
                     # spawning next to own cell, with no enemy surrounding
                     elif flag == 2:
+                        #print(f"{from_cell} has own surrounding, good")
                         good.append(action)
 
                 # Spread Action
@@ -730,11 +722,12 @@ class BOARD:
 
                     # Spread action that kills enemy nodes (with and without consequences) 
                     if flag:
-                        # from_cell's power is > 3 and spreading will kill some enemies
-                        if power > 3:
+                        # from_cell's power is the largest power cell and spreading will kill some enemies
+                        if from_cell in highestpower_cell:
                             return action
 
                         check = 0
+                        enemies = 0
                         # check each cell that it will spread to
                         for i in range(power):
                             # Location of coordinate spread position: make sure coordinate in torus structure
@@ -742,26 +735,27 @@ class BOARD:
                             spread_coord = self.fix_tuple(spread_coord)
 
                             # if it spreads near enemy cells
-                            if self.check_enemy(spread_coord) and not check:
-                                tmp_power = self.eval_power(spread_coord)
-                                # Action is obvious if action of spread is a high power coordinate, shortcircuit
-                                if tmp_power >= 3:
-                                    return action
+                            if copy.check_enemy(spread_coord, colour) and not check:
+                                # changed this part to spreading the highest power cell
+                                # tmp_power = self.eval_power(spread_coord)
+                                # # Action is obvious if action of spread is a high power coordinate, shortcircuit
+                                # if tmp_power >= 3:
+                                #     return action
                                 
-                                elif power == 1 and init_num_colour == 1:
+                                # there's only one own cell with power 1 left on the board and it spreads next to enemy cells
+                                if power == 1 and init_num_colour == 1:
                                     bad.append(action)
                                     check = 1
+                                    break
                                 
                                 else:
                                     # If can kill someone with a larger power, return the action to explore
                                     if copy.eval_power(spread_coord) > power:
                                         return action
                                     
-                                    check = 1
                                     good.append(action)
-                            
-                            if check:
-                                break
+                                    check = 1
+                                    break
 
                         # Spreading that results in no neighbour enemies
                         if not check:
@@ -780,7 +774,7 @@ class BOARD:
 
                     # if there are enemy around the cell right now and moving towards a safe cell, performance is a little wierd. When simulations
                     # are run, it seems like cells just spread randomly, if initial position is dangerous, and safter after moving   
-                    if self.check_enemy(from_cell) and not self.check_enemy(tmp_coord):
+                    if self.check_enemy(from_cell, colour) and not self.check_enemy(tmp_coord, colour):
                         average.append(action)
                         check = 1
 
@@ -798,7 +792,7 @@ class BOARD:
                     spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
                     spread_coord = self.fix_tuple(spread_coord)
                     # if it spreads near enemy cells
-                    if self.check_enemy(spread_coord):
+                    if copy.check_enemy(spread_coord, colour):
                         bad.append(action)
                         check = 1
                         break
@@ -1065,6 +1059,23 @@ class BOARD:
             if info[0] == colour:
                 count += info[1]
         return count
+    
+    # function that returns the cell coordinate with the largest power, given player colour
+    def largest_power_cell(self, colour):
+        largest_power = 1 # will only consider as large power if power is > 1
+        largest_cells = []
+        for key, value in self.grid_state.items():
+            if value[0] == colour:
+                # if found a larger power cell, clear the largest cell list
+                if value[1] > largest_power:
+                    largest_power = value[1]
+                    largest_cells.clear()
+                    largest_cells.append(key)
+                elif value[1] == largest_power and len(largest_cells) != 0:
+                    largest_cells.append(key)
+
+        return largest_cells
+
 
 
     # Function used for debugging purposes: prints the fields / attributes of the BOARD CLASS

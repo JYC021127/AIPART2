@@ -500,7 +500,6 @@ class BOARD:
             self.num_blue += 1
         self.total_power += 1
 
-        # For changes_dict
         if param is not None:
             dict_changes = {}
             dict_changes["action"] = "spawn"
@@ -754,10 +753,10 @@ class BOARD:
                                     check = 1
                                 
                                 else:
-                                    # If can kill someone with a larger power, return the action to explore 
+                                    # If can kill someone with a larger power, return the action to explore
                                     if copy.eval_power(spread_coord) > power:
                                         return action
-
+                                    
                                     check = 1
                                     good.append(action)
                             
@@ -890,8 +889,7 @@ class BOARD:
                     # spawning next to own cell, with no enemy surrounding
                     elif flag == 2:
                         good.append(action)
-
-
+	
 ######## Don't knwo whether this version is better or not
 #                    if flag == 0:
 #                        if initial_total_power > 20:

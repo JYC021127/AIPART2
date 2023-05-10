@@ -95,11 +95,7 @@ class NODE:
 
         random_action = self.board.heuristic(actions)
         # del actions # Apparently this is not needed, but can be used 
-        
-        while self.child_exists(random_action):
-            raise ValueError("shouldn't happen, after cleanactions")
-            actions.remove(random_action)
-            random_action = self.board.heuristic(actions) # might need to create a list of valid actions already searched?
+       
 
         # Create / Deepcopy original grid and apply the random action to the board
         board = deepcopy(self.board)

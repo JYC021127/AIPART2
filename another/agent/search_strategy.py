@@ -3,6 +3,8 @@
 # Obvious moves: killing high power enenmy, spreading own high power cell if it is in danger
 # Right now its not spawning next to each other kinda
 
+# Other problems: spreading towards nowhere?, which does nothing
+
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
 
@@ -14,7 +16,7 @@ from copy import deepcopy
 import random
 import time
 
-MAX_ITERATIONS = 100
+MAX_ITERATIONS = 300
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 
@@ -87,10 +89,15 @@ class NODE:
         
         # Randomly selecting an action from a list of favourable / likely actions
         actions = self.board.get_legal_actions 
+        
+        # Function that deletes all actions that are already child nodes
+        actions = self.clean_actions(actions) 
+
         random_action = self.board.heuristic(actions)
         # del actions # Apparently this is not needed, but can be used 
         
         while self.child_exists(random_action):
+            raise ValueError("shouldn't happen, after cleanactions")
             actions.remove(random_action)
             random_action = self.board.heuristic(actions) # might need to create a list of valid actions already searched?
 
@@ -106,6 +113,11 @@ class NODE:
         
         # Return the child node (we need to simulate this node)
         return child
+
+    # Function that "cleans" the actions list so that all actions are non-expanded nodes (avoids running heuristic too many times)
+    # AI assisted function (more concise): actions list where action is not any of the child.action in self.children
+    def clean_actions(self, actions):
+        return [action for action in actions if action not in [child.action for child in self.children]] 
 
 
     # Function that simulates / rollout of the node and returns the colour of the winner
@@ -709,9 +721,10 @@ class BOARD:
                     dir = (int(dir.r), int(dir.q))
                     flag = 1
                     # if it's taking too long to run, maybe get rid of this if
+
                     # from_cell's power is 6 and there are enemies around it, we don't really want enemy to kill our big powers
 ######                    # THis is acting wierd? is it, its causing us to spread to empty spaces I think 
-                    if power >= 3 and copy.check_enemy(from_cell):
+                    if power >= 2 and copy.check_enemy(from_cell):
                         return action
 #                        good.append(action)
 #                        flag = 0

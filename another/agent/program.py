@@ -62,7 +62,7 @@ class Agent:
 
         self.update(action)
 
-        # Print the whole tree: Checking whether this works atm
+     # Print the whole tree: Checking whether this works atm
 #        if self.mct.root is not None:
 #            self.mct.root.print_whole_tree_node_data()
     
@@ -79,10 +79,12 @@ class Agent:
                 child.action = None
                 self.mct.root = child
                 flag = 0
+                print("action found...")
                 break
         
         # Opponent's move is not found in root.children
         if flag:
+            print("action not found...")
             previous = self.mct.root # previous root 
             previous.board.apply_action(action)  # modify root since not using it anymore
             self.mct.root = NODE(board = deepcopy(previous.board), total = len(previous.board.get_legal_actions))

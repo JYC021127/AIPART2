@@ -16,7 +16,7 @@ from copy import deepcopy
 import random
 import time
 
-MAX_ITERATIONS = 200
+MAX_ITERATIONS = 100
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 
@@ -777,6 +777,7 @@ class BOARD:
                     # if there are enemy around the cell right now and moving towards a safe cell, performance is a little wierd. When simulations
                     # are run, it seems like cells just spread randomly, if initial position is dangerous, and safter after moving   
                     if self.check_enemy(from_cell) and not copy.check_enemy(tmp_coord): 
+                        print(f"{action}: score = 0, power = 1, there are enemies around, spread to a cell with no enemy")
                         average.append(action)
                         check = 1
 
@@ -788,25 +789,20 @@ class BOARD:
                 tmp_colour_power = copy.colour_total_power(colour)
                 check = 0
                 # spreading on itself and not eating any enemy cells
-                if isinstance(action, SpreadAction):
-                    dir = action.direction
-                    dir = (int(dir.r), int(dir.q))
-                    for i in range(power):
-                        spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
-                        spread_coord = self.fix_tuple(spread_coord)
-                        # if it spreads near enemy cells
-                        if copy.check_enemy(spread_coord):
-                            bad.append(action)
-                            check = 1
-                            break
-                    
-                    if not check and tmp_colour_power > 6 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 4:
-                        good.append(action)
-                        
-                    else:
+                dir = action.direction
+                dir = (int(dir.r), int(dir.q))
+                for i in range(power):
+                    spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
+                    spread_coord = self.fix_tuple(spread_coord)
+                    # if it spreads near enemy cells
+                    if copy.check_enemy(spread_coord):
                         bad.append(action)
-
-                else:   # Shouldn't happen since spawn is never negative score
+                        check = 1
+                        break
+                    
+                if not check and tmp_colour_power > 6 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 4:
+                    good.append(action)
+                else:
                     bad.append(action)
 
             # undo action

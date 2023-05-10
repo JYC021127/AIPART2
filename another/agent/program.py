@@ -50,7 +50,6 @@ class Agent:
         """
         Update the agent with the last player's action.
         """
-
         # For each action, we need to update change the root of our MCTS tree
         match action:
             case SpawnAction(cell):
@@ -59,7 +58,8 @@ class Agent:
             case SpreadAction(cell, direction):
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
-
+        print(f"Time remaining:  {referee['time_remaining']}")
+        #print(f"Space remaining: {referee['space_remaining']}\n")
         self.update(action)
 
      # Print the whole tree: Checking whether this works atm

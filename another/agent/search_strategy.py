@@ -722,6 +722,7 @@ class BOARD:
                         dir = action.direction
                         dir = (int(dir.r), int(dir.q))
                         tmp_coord = (from_cell[0] + dir[0], from_cell[1] + dir[1])
+                        tmp_coord = self.fix_tuple(tmp_coord)
                         # if there are enemy around the cell right now and moving towards a safe cell
                         if copy.check_enemy(from_cell) and not copy.check_enemy(tmp_coord):
                             average.append(action)

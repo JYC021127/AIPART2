@@ -16,7 +16,7 @@ from copy import deepcopy
 import random
 import time
 
-MAX_ITERATIONS = 300
+MAX_ITERATIONS = 200
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
 
@@ -716,14 +716,6 @@ class BOARD:
                     dir = action.direction
                     dir = (int(dir.r), int(dir.q))
                     flag = 1
-                    # if it's taking too long to run, maybe get rid of this if
-
-                    # from_cell's power is 6 and there are enemies around it, we don't really want enemy to kill our big powers
-######                    # THis is acting wierd? is it, its causing us to spread to empty spaces I think 
-                    if power >= 2 and copy.check_enemy(from_cell):
-                        return action
-#                        good.append(action)
-#                        flag = 0
 
                     # Spreading without killing ememy nodes (score > 0 since number of own colour nodes increased)
                     if flag:
@@ -738,6 +730,10 @@ class BOARD:
 
                     # Spread action that kills enemy nodes (with and without consequences) 
                     if flag:
+                        # from_cell's power is 6 and spreading will kill some enemies
+                        if power == 6:
+                            return action
+
                         check = 0
                         # check each cell that it will spread to
                         for i in range(power):
@@ -749,7 +745,7 @@ class BOARD:
                             if copy.check_enemy(spread_coord) and not check:
                                 tmp_power = copy.eval_power(spread_coord)
                                 # Action is obvious if action of spread is a high power coordinate, shortcircuit
-                                if tmp_power >= 3 and init_num_colour > 1:
+                                if tmp_power >= 3:
                                     return action
                                 
                                 elif power == 1 and init_num_colour == 1:
@@ -772,18 +768,17 @@ class BOARD:
             elif score == 0:
                 check = 0
                 # just a power 1 cell moving around
-                if isinstance(action, SpreadAction):
-                    if power == 1:
-                        dir = action.direction
-                        dir = (int(dir.r), int(dir.q))
-                        tmp_coord = (from_cell[0] + dir[0], from_cell[1] + dir[1])
-                        tmp_coord = self.fix_tuple(tmp_coord)
+                if power == 1:
+                    dir = action.direction
+                    dir = (int(dir.r), int(dir.q))
+                    tmp_coord = (from_cell[0] + dir[0], from_cell[1] + dir[1])
+                    tmp_coord = self.fix_tuple(tmp_coord)
 
-                        # if there are enemy around the cell right now and moving towards a safe cell, performance is a little wierd. When simulations
-                        # are run, it seems like cells just spread randomly, if initial position is dangerous, and safter after moving   
-                        if self.check_enemy(from_cell) and not copy.check_enemy(tmp_coord): 
-                            average.append(action)
-                            check = 1
+                    # if there are enemy around the cell right now and moving towards a safe cell, performance is a little wierd. When simulations
+                    # are run, it seems like cells just spread randomly, if initial position is dangerous, and safter after moving   
+                    if self.check_enemy(from_cell) and not copy.check_enemy(tmp_coord): 
+                        average.append(action)
+                        check = 1
 
                 if not check:
                     bad.append(action)
@@ -807,8 +802,7 @@ class BOARD:
                     
                     if not check and tmp_colour_power > 6 and tmp_colour_power == self.colour_total_power(colour) and num_own_colour > 4:
                         good.append(action)
-                    elif not check:
-                        average.append(action)
+                        
                     else:
                         bad.append(action)
 

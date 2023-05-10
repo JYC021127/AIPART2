@@ -58,14 +58,10 @@ class Agent:
             case SpreadAction(cell, direction):
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
-        print(f"Time remaining:  {referee['time_remaining']}")
+        #print(f"Time remaining:  {referee['time_remaining']}")
         #print(f"Space remaining: {referee['space_remaining']}\n")
         self.update(action)
 
-     # Print the whole tree: Checking whether this works atm
-#        if self.mct.root is not None:
-#            self.mct.root.print_whole_tree_node_data()
-    
 
     # Function that updates root of the tree based on enemy action  
     def update(self, action: Action):
@@ -84,7 +80,6 @@ class Agent:
         
         # Opponent's move is not found in root.children
         if flag:
-            #print("action not found...")
             previous = self.mct.root # previous root 
             previous.board.apply_action(action)  # modify root since not using it anymore
             self.mct.root = NODE(board = deepcopy(previous.board), total = len(previous.board.get_legal_actions))

@@ -18,7 +18,7 @@ import time
 
 MAX_ITERATIONS = 100
 MAX_POWER = 49  # Max total power of a game
-MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
+MAX_TURNS = 343 # Max total turns in a game
 
 class DIR:
     coord = [(0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1), (1, 0)]
@@ -169,7 +169,7 @@ class NODE:
             return float('inf')
         else:
             value = self.wins/self.playouts
-            return value + c * sqrt(log(self.parent.playouts)/self.playouts)# + self.board.board_score()/(self.playouts * 5)
+            return value + c * sqrt(log(self.parent.playouts)/self.playouts) # + self.board.board_score()/(self.playouts * 5)
     
 
 
@@ -647,7 +647,6 @@ class BOARD:
                         if tmp_coord in copy.grid_state:
                             # neighbour is an enemy
                             if copy.eval_colour(tmp_coord) != colour:
-                                #print(f"{tmp_coord} is neighbour enemy cell, can't spawn")
                                 bad.append(action)
                                 flag = 1
                                 break
@@ -1051,21 +1050,12 @@ class MCT:
 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
-#            random = 1
             while not node.board.game_over and node.explored_enough:
-#                print(f"tree traversed {random} times, it looks like this:")
-#                print(render_board(node.board.grid_state, ansi = True))
-#                random += 1
                 node = node.largest_ucb()
-
-           
+ 
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.explored_enough:
-#                print(f"I was here, node is: {node}")
-#                print(render_board(node.board.grid_state, ansi = True))
-#                node.print_node_data
                 node = node.expand() # Generates a child node that is most likely
-#                print(f"afterwards, node is: {node}")
 
             # Simulation: Simulate newly expanded node or save winner of  the terminal state
             winner = node.simulate()

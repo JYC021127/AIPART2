@@ -664,7 +664,7 @@ class BOARD:
             score = 0 # used to rank actions
             cell = action.cell
             from_cell = (int(cell.r), int(cell.q))
-            power = copy.eval_power(from_cell)
+            power = self.eval_power(from_cell) # power of from_cell
             
             # apply action to the temporary board
             changes_dict = copy.apply_action(action, action_param = "get_actions_dict")
@@ -692,9 +692,9 @@ class BOARD:
                     for dir in DIR.coord:
                         tmp_coord = (from_cell[0] + dir[0], from_cell[1] + dir[1])
                         tmp_coord = self.fix_tuple(tmp_coord)
-                        if tmp_coord in copy.grid_state:
+                        if tmp_coord in self.grid_state:
                             # neighbour is an enemy
-                            if copy.eval_colour(tmp_coord) != colour:
+                            if self.eval_colour(tmp_coord) != colour:
                                 bad.append(action)
                                 flag = 1
                                 break
@@ -730,8 +730,8 @@ class BOARD:
 
                     # Spread action that kills enemy nodes (with and without consequences) 
                     if flag:
-                        # from_cell's power is 6 and spreading will kill some enemies
-                        if power == 6:
+                        # from_cell's power is > 3 and spreading will kill some enemies
+                        if power > 3:
                             return action
 
                         check = 0
@@ -742,8 +742,8 @@ class BOARD:
                             spread_coord = self.fix_tuple(spread_coord)
 
                             # if it spreads near enemy cells
-                            if copy.check_enemy(spread_coord) and not check:
-                                tmp_power = copy.eval_power(spread_coord)
+                            if self.check_enemy(spread_coord) and not check:
+                                tmp_power = self.eval_power(spread_coord)
                                 # Action is obvious if action of spread is a high power coordinate, shortcircuit
                                 if tmp_power >= 3:
                                     return action
@@ -776,8 +776,7 @@ class BOARD:
 
                     # if there are enemy around the cell right now and moving towards a safe cell, performance is a little wierd. When simulations
                     # are run, it seems like cells just spread randomly, if initial position is dangerous, and safter after moving   
-                    if self.check_enemy(from_cell) and not copy.check_enemy(tmp_coord): 
-                        print(f"{action}: score = 0, power = 1, there are enemies around, spread to a cell with no enemy")
+                    if self.check_enemy(from_cell) and not self.check_enemy(tmp_coord):
                         average.append(action)
                         check = 1
 
@@ -795,7 +794,7 @@ class BOARD:
                     spread_coord = self.add_tuple(from_cell, self.mult_tuple(dir, i + 1))
                     spread_coord = self.fix_tuple(spread_coord)
                     # if it spreads near enemy cells
-                    if copy.check_enemy(spread_coord):
+                    if self.check_enemy(spread_coord):
                         bad.append(action)
                         check = 1
                         break

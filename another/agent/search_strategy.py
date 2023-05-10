@@ -18,7 +18,7 @@ import time
 
 MAX_ITERATIONS = 100
 MAX_POWER = 49  # Max total power of a game
-MAX_TURNS = 343 # Max total turns in a game, This might be 342, since the teacher's turn starts at 1, and we start at 0, but it shouldn't matter too much (Actually, i need to think about this a bit more)
+MAX_TURNS = 343 # Max total turns in a game
 
 class DIR:
     coord = [(0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1), (1, 0)]
@@ -51,40 +51,6 @@ class NODE:
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
     '''
 #    ##### might need to check the complexity again
-#    #### Oh lol, when did u change this. I thought we were only expanding one child each time haha, there's no point using total then here
-#    ### If u use this, limiting the branching factor won't work. Did u want to expand multiple nodes at once?
-#    def expand(self):
-#        total = self.total 
-#        count = 0
-#
-#        # Randomly selecting an action from a list of favourable / likely actions
-#        actions = self.board.get_legal_actions 
-#
-#        # will keep finding the best action if child already exists in children
-#        while count < total:
-#            random_action = self.board.heuristic(actions)
-#
-#            if self.child_exists(random_action):
-#                print("This shouldn't be run I think")
-#                actions.remove(random_action)
-#
-#            else:
-#                # Create / Deepcopy original grid and apply the random action to the board
-#                board = deepcopy(self.board)
-#                board.apply_action(random_action)
-#
-#                # Initialize new child and add into into children list of self / parent.
-#                child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
-#
-#                # Add child to self.children list
-#                self.add_child(child)
-#                # Return the child node (we need to simulate this node)
-#                return child
-#            
-#            count += 1
-#        # del actions # Apparently this is not needed, but can be used 
-
-
     def expand(self):
         
         # Randomly selecting an action from a list of favourable / likely actions
@@ -204,7 +170,7 @@ class NODE:
             return float('inf')
         else:
             value = self.wins/self.playouts
-            return value + c * sqrt(log(self.parent.playouts)/self.playouts)# + self.board.board_score()/(self.playouts * 5)
+            return value + c * sqrt(log(self.parent.playouts)/self.playouts) # + self.board.board_score()/(self.playouts * 5)
     
 
 
@@ -620,7 +586,8 @@ class BOARD:
     '''
     Current Heuristic:
     Obvious
-    - spread action, kill enemy cells and has no enemy neighbour after spreading, high power spread action 
+    - spread action, kill enemy cells and has no enemy neighbour after spreading
+    - high power spread action 
 
     Good
     - spawn action next to own with no enemy neighbour
@@ -646,10 +613,8 @@ class BOARD:
         init_blue = self.num_blue
         highestpower_cell = self.largest_power_cell(colour) # cell with highest power for that player
         copy = deepcopy(self)
-        # print("\n***********start of heuristic")
-        # print(f"board is {render_board(self.grid_state, ansi = True)}")
+
         for action in actions:
-            #print(f"action is {action}")
             score = 0 # used to rank actions
             cell = action.cell
             from_cell = (int(cell.r), int(cell.q))
@@ -727,7 +692,6 @@ class BOARD:
                             return action
 
                         check = 0
-                        enemies = 0
                         # check each cell that it will spread to
                         for i in range(power):
                             # Location of coordinate spread position: make sure coordinate in torus structure
@@ -735,27 +699,18 @@ class BOARD:
                             spread_coord = self.fix_tuple(spread_coord)
 
                             # if it spreads near enemy cells
-                            if copy.check_enemy(spread_coord, colour) and not check:
-                                # changed this part to spreading the highest power cell
-                                # tmp_power = self.eval_power(spread_coord)
-                                # # Action is obvious if action of spread is a high power coordinate, shortcircuit
-                                # if tmp_power >= 3:
-                                #     return action
+                            if copy.check_enemy(spread_coord, colour):
+                                check = 1
+                                break
                                 
-                                # there's only one own cell with power 1 left on the board and it spreads next to enemy cells
-                                if power == 1 and init_num_colour == 1:
-                                    bad.append(action)
-                                    check = 1
-                                    break
-                                
-                                else:
-                                    # If can kill someone with a larger power, return the action to explore
-                                    if copy.eval_power(spread_coord) > power:
-                                        return action
-                                    
-                                    good.append(action)
-                                    check = 1
-                                    break
+                        # there's only one own cell with power 1 left on the board and it spreads next to enemy cells
+                        if check and power == 1 and init_num_colour == 1:
+                            bad.append(action)
+                        
+                        # If can kill someone with a larger power, return the action to explore
+                        elif check:
+                            if copy.eval_power(spread_coord) > power:   
+                                good.append(action)
 
                         # Spreading that results in no neighbour enemies
                         if not check:
@@ -825,7 +780,6 @@ class BOARD:
         # Not gonna use deepcopy for simulations since too expensive and doesn't really affect main branch of the tree
 
         for action in actions:
-
             # Initialize score and player_turn colour
             colour = self.player_turn
             score = 0
@@ -1106,21 +1060,13 @@ class MCT:
 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root
-#            random = 1
             while not node.board.game_over and node.explored_enough:
-#                print(f"tree traversed {random} times, it looks like this:")
-#                print(render_board(node.board.grid_state, ansi = True))
-#                random += 1
                 node = node.largest_ucb()
 
            
             # Expansion: Expand if board not at terminal state and node still has unexplored children
             if not node.board.game_over and not node.explored_enough:
-#                print(f"I was here, node is: {node}")
-#                print(render_board(node.board.grid_state, ansi = True))
-#                node.print_node_data
                 node = node.expand() # Generates a child node that is most likely
-#                print(f"afterwards, node is: {node}")
 
             # Simulation: Simulate newly expanded node or save winner of  the terminal state
             winner = node.simulate()

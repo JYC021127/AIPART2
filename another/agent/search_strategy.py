@@ -500,6 +500,7 @@ class BOARD:
             self.num_blue += 1
         self.total_power += 1
 
+        # For changes_dict
         if param is not None:
             dict_changes = {}
             dict_changes["action"] = "spawn"
@@ -753,6 +754,10 @@ class BOARD:
                                     check = 1
                                 
                                 else:
+                                    # If can kill someone with a larger power, return the action to explore 
+                                    if copy.eval_power(spread_coord) > power:
+                                        return action
+
                                     check = 1
                                     good.append(action)
                             
@@ -840,6 +845,8 @@ class BOARD:
             # Initial total power of the player_turn colour
             initial_colour_total_power = self.colour_total_power(colour)
 
+            initial_total_power = self.total_power
+
             changes_dict = self.apply_action(action, action_param = "get_actions_dict")
             
             new_red = self.num_red
@@ -885,6 +892,20 @@ class BOARD:
                     elif flag == 2:
                         good.append(action)
 
+
+######## Don't knwo whether this version is better or not
+#                    if flag == 0:
+#                        if initial_total_power > 20:
+#                           bad.append(action)
+#                        else:
+#                            average.append(action)
+#                    # spawning next to own cell, with no enemy surrounding
+#                    elif flag == 2:
+#                        if initial_total_power > 20:
+#                            average.append(action)
+#                        else:
+#                            good.append(action)
+
                 # Spread is good if it kills enemy nodes, bad if not
                 elif isinstance(action, SpreadAction):
                     # Initialize 
@@ -918,7 +939,7 @@ class BOARD:
 
             else: 
                 # Good action if total power of colour now is at least as large than it previous was
-                if initial_colour_total_power <= self.colour_total_power(colour):
+                if initial_colour_total_power <= self.colour_total_power(colour) and self.turns > 10:
                     good.append(action)
                 else:
                     bad.append(action)

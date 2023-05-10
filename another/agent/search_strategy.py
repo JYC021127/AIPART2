@@ -830,25 +830,17 @@ class BOARD:
                         if flag == 1:
                             break
 
-                    # spawning in an empty surrounding
                     if flag == 0:
-                        average.append(action)
+                        if initial_total_power > 20:
+                           bad.append(action)
+                        else:
+                            average.append(action)
                     # spawning next to own cell, with no enemy surrounding
                     elif flag == 2:
-                        good.append(action)
-	
-# ####### Don't knwo whether this version is better or not
-#                     if flag == 0:
-#                         if initial_total_power > 20:
-#                            bad.append(action)
-#                         else:
-#                             average.append(action)
-#                     # spawning next to own cell, with no enemy surrounding
-#                     elif flag == 2:
-#                         if initial_total_power > 20:
-#                             average.append(action)
-#                         else:
-#                             good.append(action)
+                        if initial_total_power > 20:
+                            average.append(action)
+                        else:
+                            good.append(action)
 
                 # Spread is good if it kills enemy nodes, bad if not
                 elif isinstance(action, SpreadAction):

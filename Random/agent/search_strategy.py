@@ -26,7 +26,7 @@ from copy import deepcopy
 import random
 import time
 
-MAX_ITERATIONS = 100
+#MAX_ITERATIONS = 100
 MAX_POWER = 49  # Max total power of a game
 MAX_TURNS = 343 # Max total turns in a game
 
@@ -1091,11 +1091,36 @@ class MCT:
 
 
     # perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backpropogate
-    def mcts(self):
+    def mcts(self, time_left = None, space_left = None):
         count = 0
         root = self.root
+    
+        # Check time:
+        print(f"time left is {time_left}")
+
+        # Check Space: 
+        print(f"space left is {space_left}")
+
+        if time_left is None:
+            iterations = 150
+        else:
+            if time_left < 10:
+                if time_left < 2:
+                    iterations = 1
+                elif self.root.board.turns > 300:
+                    iterations = 30
+                else:
+                    iterations = 10
+            elif time_left > 160:
+                if self.root.board.turns < 10:
+                    iterations = 100
+                else: 
+                    iterations = 200
+            else:
+                iterations = 150
         
-        while count < MAX_ITERATIONS: # Can include memory and time constraint in the while loop as well 
+        
+        while count < iterations: # Can include memory and time constraint in the while loop as well 
 
             # Traverse tree and select best node based on UCB until reach a node that isn't fully explored
             node = root

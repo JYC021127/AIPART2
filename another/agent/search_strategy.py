@@ -89,27 +89,21 @@ class NODE:
     '''
     def simulate(self):
 
-        # Create a deep copy of the node we can modify (independent of the node on the tree)
-        node = deepcopy(self)
+        # Create a deep copy of self.board we can modify (independent of the node on the tree)
+        board = deepcopy(self.board)
 
-        # Avoiding errors
-        node.parent = None
-        node.children = None
-        node.action = None
-        node.total = 0
-  
         # While not game over, keep playing a move
-        while not node.board.game_over and not node.board.too_much_adv:
-            actions = node.board.get_legal_actions
+        while not board.game_over and not board.too_much_adv:
+            actions = board.get_legal_actions
 
             # Simulate with choices based on a light weight heuristic  
-            random_action = node.board.light_heuristic(actions)
+            random_action = board.light_heuristic(actions)
             
             #del actions # Apparently not needed
-            node.board.apply_action(random_action)
+            board.apply_action(random_action)
 
         # Evaluate winner, after game ending condition satisfied (escaped while loop)
-        winner = node.board.winner 
+        winner = board.winner 
         #del node # May not be needed, python garbage collector can deal with it
 
         # Winning colour

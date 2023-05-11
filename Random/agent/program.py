@@ -37,11 +37,11 @@ class Agent:
         match self._color:
             case PlayerColor.RED:
                 print("RED ACTION")
-                return self.mct.mcts(time_left = referee['time_remaining'], space_left = referee["space_limit"])
+                return self.mct.mcts(time_left = referee['time_remaining'], space_left = referee["space_remaining"])
 
             case PlayerColor.BLUE:
                 print("BLUE ACTION")
-                return self.mct.mcts(time_left = referee['time_remaining'], space_left = referee["space_limit"])
+                return self.mct.mcts(time_left = referee['time_remaining'], space_left = referee["space_remaining"])
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
         """

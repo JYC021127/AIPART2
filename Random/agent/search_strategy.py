@@ -1116,9 +1116,9 @@ class MCT:
                 if self.root.board.turns < 10:
                     iterations = 100
                 else: 
-                    iterations = 170
+                    iterations = 150  
             else:
-                iterations = 130
+                iterations = 100 
         
         
         while count < iterations: # Can include memory and time constraint in the while loop as well 

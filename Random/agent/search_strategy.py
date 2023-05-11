@@ -1101,23 +1101,24 @@ class MCT:
         # Check Space: 
         print(f"space left is {space_left}")
 
-        if time_left is None:
+        if time_left is None or space_left is None:
+            print("Either time or space is None")
             iterations = 150
         else:
-            if time_left < 10:
-                if time_left < 2:
+            if time_left < 10 or space_left < 10:
+                if time_left < 2 or space_left < 2:
                     iterations = 1
                 elif self.root.board.turns > 300:
                     iterations = 30
                 else:
                     iterations = 10
-            elif time_left > 160:
+            elif time_left > 160 and space_left > 160:
                 if self.root.board.turns < 10:
                     iterations = 100
                 else: 
-                    iterations = 200
+                    iterations = 170
             else:
-                iterations = 150
+                iterations = 130
         
         
         while count < iterations: # Can include memory and time constraint in the while loop as well 

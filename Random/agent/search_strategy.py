@@ -3,7 +3,17 @@
 # Obvious moves: killing high power enenmy, spreading own high power cell if it is in danger
 # Right now its not spawning next to each other kinda
 
-# Other problems: spreading towards nowhere?, which does nothing
+
+'''
+Stuff to change?:
+    - test if legal_actions will be faster if stored
+    - Incorporate referee time and space
+    - Challenges: Randomness causes our playouts to go over time, each tree needs to be rebuilt
+
+
+'''
+
+
 
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
@@ -26,11 +36,12 @@ class DIR:
     
 # Class representing Nodes of the Monte Carlo Tree
 class NODE:
-    def __init__(self, board, action = None, parent = None, children = None, total = 0, wins = 0, playouts = 0):
+    def __init__(self, board, action = None, parent = None, children = None, actions_left = None, total = 0, wins = 0, playouts = 0):
         self.board = board # Infexion grid and relevant information relating to the grid
         self.action = action # Action parent node took to get to current state 
         self.parent = parent # Parent node
         self.children = children if children is not None else [] # Children is children if not, otherwise it is empty list 
+        self.actions_left = actions_left if actions_left is not None else set() ##################### Testing at the moment
         self.total = total # total number of possible moves 
         self.wins = wins # Number of wins
         self.playouts = playouts # Number of relating sumulations / playouts 
@@ -50,15 +61,41 @@ class NODE:
         - Favour exploring regions that are promising for both colours: Spawning in clusters, spreading if opponent is reachable
     O(n^2) + O(n^2) = O(n^2), getting all the legal actions is dictionary size + deepcopy is also size of dictionary
     '''
-    def expand(self):
-        
-        # Randomly selecting an action from a list of favourable / likely actions
-        actions = self.board.get_legal_actions 
-        
-        # Function that deletes all actions that are already child nodes
-        actions = self.clean_actions(actions) 
+#    def expand(self):
+#        
+#        # Randomly selecting an action from a list of favourable / likely actions
+#        actions = self.board.get_legal_actions 
+#        
+#        # Function that deletes all actions that are already child nodes
+#        actions = self.clean_actions(actions) 
+#
+#        random_action = self.board.heuristic(actions)
+#        # del actions # Apparently this is not needed, but can be used 
+#       
+#
+#        # Create / Deepcopy original grid and apply the random action to the board
+#        board = deepcopy(self.board)
+#        board.apply_action(random_action)
+#
+#        
+#        action_list = board.get_legal_actions # Just testing 
+#
+#        # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
+#        child = NODE(board = board, action = random_action, parent = self, children = None, actions_left = action_list ,total = len(action_list))
+#
+##        # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
+##        child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
+#
+#        # Add child to self.children list
+#        self.add_child(child)
+#        
+#        # Return the child node (we need to simulate this node)
+#        return child
 
-        random_action = self.board.heuristic(actions)
+
+    def expand(self):
+         
+        random_action = self.board.heuristic(self.actions_left)
         # del actions # Apparently this is not needed, but can be used 
        
 
@@ -66,15 +103,23 @@ class NODE:
         board = deepcopy(self.board)
         board.apply_action(random_action)
 
+        
+        action_set = board.get_legal_actions # Just testing 
+
         # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
-        child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
+        child = NODE(board = board, action = random_action, parent = self, children = None, actions_left = action_set ,total = len(action_set))
+
+#        # Initialize new child and add into into children list of self / parent. (Im not sure what you mean by total, but im assuming the total number of possible children nodes)
+#        child = NODE(board = board, action = random_action, parent = self, children = None, total = len(board.get_legal_actions))
 
         # Add child to self.children list
         self.add_child(child)
         
+        # Delete the action from the action_left list
+        self.actions_left.remove(random_action)
+
         # Return the child node (we need to simulate this node)
         return child
-
 
     # Function that "cleans" the actions list so that all actions are non-expanded nodes (avoids running heuristic too many times)
     # AI assisted function (more concise): actions list where action is not any of the child.action in self.children
@@ -90,26 +135,27 @@ class NODE:
     def simulate(self):
 
         # Create a deep copy of the node we can modify (independent of the node on the tree)
-        node = deepcopy(self)
+#        node = deepcopy(self)
+        board = deepcopy(self.board)
 
-        # Avoiding errors
-        node.parent = None
-        node.children = None
-        node.action = None
-        node.total = 0
+#        # Avoiding errors
+#        node.parent = None
+#        node.children = None
+#        node.action = None
+#        node.total = 0
   
         # While not game over, keep playing a move
-        while not node.board.game_over and not node.board.too_much_adv:
-            actions = node.board.get_legal_actions
+        while not board.game_over and not board.too_much_adv:
+            actions = board.get_legal_actions
 
             # Simulate with choices based on a light weight heuristic  
-            random_action = node.board.light_heuristic(actions)
+            random_action = board.light_heuristic(actions)
             
             #del actions # Apparently not needed
-            node.board.apply_action(random_action)
+            board.apply_action(random_action)
 
         # Evaluate winner, after game ending condition satisfied (escaped while loop)
-        winner = node.board.winner 
+        winner = board.winner 
         #del node # May not be needed, python garbage collector can deal with it
 
         # Winning colour
@@ -150,7 +196,7 @@ class NODE:
     @property 
     def explored_enough(self):       
         # Explored enough, if 1/4 of of total branches are searched and more than 10 branches already searched
-        if len(self.children) >= (self.total / 5) and len(self.children) >= 20:
+        if len(self.children) >= (self.total / 5) and len(self.children) >= 25:
             return True
 
         # Explored enough, if every branch is explored at least once
@@ -276,7 +322,7 @@ class BOARD:
     @property
     def get_legal_actions(self): 
 
-        legal_actions = []
+        legal_actions = set()
         flag = 0
        
         # Using flag to flag whether board is eligible for spawning
@@ -291,15 +337,15 @@ class BOARD:
                 # Spawn action allowed if total power < 49, and coordinate is not currently occupied
                 if flag:  
                     if coord not in self.grid_state:
-                        legal_actions.append(SpawnAction(HexPos(coord[0], coord[1])))
+                        legal_actions.add(SpawnAction(HexPos(coord[0], coord[1])))
                     
                 # Spread action allowed if origin of spread is the same as the colour of current player turn
                 if coord in self.grid_state: 
                     if self.grid_state[coord][0] == self.player_turn:
                         for direction in DIR.hex_dir:
-                            legal_actions.append(SpreadAction(HexPos(coord[0], coord[1]), direction))
+                            legal_actions.add(SpreadAction(HexPos(coord[0], coord[1]), direction))
 
-        # return list of legal actions
+        # return set of legal actions
         return legal_actions
 
     # Function that takes in a dictionary of changed nodes, "undos" the action on a dictionary
@@ -1038,7 +1084,10 @@ class BOARD:
 class MCT:
     def __init__(self, root: NODE): # Include time_remaining here possibly, make the number of iterations dependent on time, maybe current number of turns?
         self.root = root
-        self.root.total = len(self.root.board.get_legal_actions)
+        
+        tmp = self.root.board.get_legal_actions
+        self.root.actions_left = tmp
+        self.root.total = len(tmp)
 
 
     # perform monte carlo tree search: Initialize, Select, Expand, Simulate, Backpropogate

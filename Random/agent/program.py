@@ -20,9 +20,6 @@ class Agent:
         """
         Initialise the agent.
         """
-        # self.mct = MCT(NODE(BOARD({})))
-        # self._color = color
-
         match color:
             case PlayerColor.RED:
                 print("Testing: I am playing as red")
@@ -82,7 +79,10 @@ class Agent:
         if flag:
             previous = self.mct.root # previous root 
             previous.board.apply_action(action)  # modify root since not using it anymore
-            self.mct.root = NODE(board = deepcopy(previous.board), total = len(previous.board.get_legal_actions))
+
+            tmp = previous.board.get_legal_actions
+
+            self.mct.root = NODE(board = deepcopy(previous.board), actions_left = tmp, total = len(tmp))
             del previous
 
 

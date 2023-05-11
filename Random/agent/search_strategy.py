@@ -196,7 +196,7 @@ class NODE:
     @property 
     def explored_enough(self):       
         # Explored enough, if 1/4 of of total branches are searched and more than 10 branches already searched
-        if len(self.children) >= (self.total / 5) and len(self.children) >= 25:
+        if len(self.children) >= (self.total / 5) and len(self.children) >= 20:
             return True
 
         # Explored enough, if every branch is explored at least once
@@ -1105,21 +1105,15 @@ class MCT:
             print("Either time or space is None")
             iterations = 150
         else:
-            if time_left < 10 or space_left < 10:
-                if time_left < 2 or space_left < 2:
+            if time_left > 10 and space_left > 10:
+                iterations = 100
+            else:
+                if time_left < 4 or space_left < 4:
                     iterations = 1
                 elif self.root.board.turns > 300:
                     iterations = 30
                 else:
                     iterations = 10
-            elif time_left > 160 and space_left > 160:
-                if self.root.board.turns < 10:
-                    iterations = 100
-                else: 
-                    iterations = 150  
-            else:
-                iterations = 100 
-        
         
         while count < iterations: # Can include memory and time constraint in the while loop as well 
 
